@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { toGeoJSON } from "@/lib/geojson";
-import { decodeRouteParams, decodeStopIds, encodeRouteParams, encodeStopIds } from "@/lib/share";
+import { decodeRouteParams, decodeStopIds, encodeRouteParams, encodeStopIds, googleMapsUrl } from "@/lib/share";
 import type { RouteRequest, RouteResponse } from "@/types";
 
 describe("share URL", () => {
@@ -47,6 +47,39 @@ describe("share URL", () => {
     "city=rome&lat=41.9&lng=12.5&d=60&theme=coffee&stops=x12",
   ])("rejects %j", (qs) => {
     expect(decodeRouteParams(new URLSearchParams(qs))).toBeNull();
+  });
+});
+
+describe("googleMapsUrl", () => {
+  const start = { lat: 41.8986, lng: 12.4769 };
+  const stops = [
+    { lat: 41.89825, lng: 12.47543 },
+    { lat: 41.89357, lng: 12.47444 },
+    { lat: 41.89581, lng: 12.48427 },
+  ];
+
+  it("walks from the start through every stop to the last one", () => {
+    const url = new URL(googleMapsUrl(start, stops)!);
+    expect(url.origin + url.pathname).toBe("https://www.google.com/maps/dir/");
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      api: "1",
+      origin: "41.8986,12.4769",
+      destination: "41.89581,12.48427",
+      waypoints: "41.89825,12.47543|41.89357,12.47444",
+      travelmode: "walking",
+    });
+  });
+
+  it("needs no waypoints for a single stop, and nothing for none", () => {
+    expect(new URL(googleMapsUrl(start, [stops[0]])!).searchParams.has("waypoints")).toBe(false);
+    expect(googleMapsUrl(start, [])).toBeNull();
+  });
+
+  it("keeps to the 9-waypoint limit", () => {
+    const many = Array.from({ length: 12 }, (_, i) => ({ lat: 41.9 + i / 1000, lng: 12.48 }));
+    const url = new URL(googleMapsUrl(start, many)!);
+    expect(url.searchParams.get("waypoints")!.split("|")).toHaveLength(9);
+    expect(url.searchParams.get("destination")).toBe("41.911,12.48");
   });
 });
 

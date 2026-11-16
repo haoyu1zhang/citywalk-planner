@@ -5,8 +5,10 @@ import {
   CalendarDays,
   Check,
   Download,
+  Dices,
   ExternalLink,
   LoaderCircle,
+  Navigation,
   RefreshCw,
   Share2,
   Trash2,
@@ -19,16 +21,17 @@ import { EventsPanel } from "@/components/EventsPanel";
 import { useI18n } from "@/components/I18nProvider";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import LazyMap from "@/components/LazyMap";
+import { SpinWheel } from "@/components/SpinWheel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { findCity } from "@/lib/cities";
 import { toGeoJSON } from "@/lib/geojson";
-import { cheapestInsertion, formatEventDate } from "@/lib/events";
+import { cheapestInsertion, formatEventWhen } from "@/lib/events";
 import { translateMaybe, type MessageKey } from "@/lib/i18n";
 import { apiErrorSchema, routeResponseSchema, type EventItem } from "@/lib/schemas";
-import { decodeRouteParams, encodeRouteParams } from "@/lib/share";
+import { decodeRouteParams, encodeRouteParams, googleMapsUrl } from "@/lib/share";
 import { cn, formatKm } from "@/lib/utils";
-import type { RouteRequest, RouteResponse } from "@/types";
+import type { LatLng, RouteRequest, RouteResponse } from "@/types";
 
 type State =
   | { status: "loading" }
@@ -38,7 +41,6 @@ type State =
 const MIN_STOPS = 2;
 const MAX_STOPS = 12;
 
-/** Carries the API error code so the UI can show it in the visitor's language. */
 class ApiError extends Error {
   constructor(readonly code: string) {
     super(code);
@@ -57,14 +59,13 @@ async function requestRoute(req: RouteRequest, signal: AbortSignal): Promise<Rou
     const err = apiErrorSchema.safeParse(json);
     throw new ApiError(err.success ? err.data.error.code : "INTERNAL");
   }
-  // Never trust the wire, even our own API.
   return routeResponseSchema.parse(json);
 }
 
 export function RouteView() {
   const router = useRouter();
   const { t, locale } = useI18n();
-  const [eventsOpen, setEventsOpen] = useState(false);
+  const [panel, setPanel] = useState<"wheel" | "events" | null>(null);
   const searchParams = useSearchParams();
   const queryString = searchParams.toString();
   const req = useMemo(() => decodeRouteParams(new URLSearchParams(queryString)), [queryString]);
@@ -73,8 +74,7 @@ export function RouteView() {
   const [attempt, setAttempt] = useState(0);
   const [activeStopId, setActiveStopId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  // Query string we already hold a route for; lets us pin the stops into the
-  // URL after generating without triggering a second request.
+  // query string we already have a route for, so pinning stops into the URL doesn't refetch
   const resolvedQuery = useRef<string | null>(null);
 
   useEffect(() => {
@@ -175,17 +175,19 @@ export function RouteView() {
         setTimeout(() => setCopied(false), 2000);
       }
     } catch {
-      // The user dismissed the share sheet, or clipboard access was denied.
+      // share sheet dismissed or clipboard denied
     }
   }
 
-  // The event's venue becomes a stop where it adds the least walking.
-  function addEvent(event: EventItem) {
+  // new stops go where they add the least walking
+  function addStop(id: string, point: LatLng) {
     if (!req) return;
     const ids = route.stops.map((s) => s.id);
-    ids.splice(cheapestInsertion(req.start, route.stops, event), 0, `event/${event.id}`);
+    ids.splice(cheapestInsertion(req.start, route.stops, point), 0, id);
     navigate({ ...req, stopIds: ids });
   }
+  const canAdd = !updating && route.stops.length < MAX_STOPS;
+  const mapsUrl = googleMapsUrl(req.start, route.stops);
   const [attributionBefore, attributionAfter] = t("route.attribution").split("{osm}");
 
   function exportGeoJSON() {
@@ -232,6 +234,14 @@ export function RouteView() {
         </ul>
       )}
 
+      {mapsUrl && (
+        <Button asChild className="w-full">
+          <a href={mapsUrl} target="_blank" rel="noreferrer" data-testid="navigate">
+            <Navigation /> {t("route.navigate")}
+          </a>
+        </Button>
+      )}
+
       <div className="grid grid-cols-3 gap-2">
         <Button variant="outline" onClick={() => navigate({ ...req, stopIds: undefined, seed: (req.seed ?? 0) + 1 })} disabled={updating}>
           <RefreshCw className={cn(updating && "animate-spin")} /> {t("route.regenerate")}
@@ -264,7 +274,7 @@ export function RouteView() {
                 <Badge>{t(`category.${stop.category}`)}</Badge>
                 {stop.event ? (
                   <span>
-                    {formatEventDate(stop.event.startsAt, locale)}
+                    {formatEventWhen(stop.event, locale)}
                     {stop.event.venue && ` · ${stop.event.venue}`}
                   </span>
                 ) : (
@@ -296,18 +306,39 @@ export function RouteView() {
         ))}
       </ol>
 
-      {eventsOpen ? (
+      <div className="grid grid-cols-2 gap-2">
+        <Button
+          variant={panel === "wheel" ? "default" : "outline"}
+          onClick={() => setPanel(panel === "wheel" ? null : "wheel")}
+          aria-expanded={panel === "wheel"}
+          data-testid="wheel-open"
+        >
+          <Dices /> {t("wheel.open")}
+        </Button>
+        <Button
+          variant={panel === "events" ? "default" : "outline"}
+          onClick={() => setPanel(panel === "events" ? null : "events")}
+          aria-expanded={panel === "events"}
+          data-testid="events-open"
+        >
+          <CalendarDays /> {t("events.open")}
+        </Button>
+      </div>
+      {panel === "wheel" && (
+        <SpinWheel
+          req={req}
+          stopIds={route.stops.map((s) => s.id)}
+          canAdd={canAdd}
+          onAdd={(place) => addStop(place.id, place)}
+        />
+      )}
+      {panel === "events" && (
         <EventsPanel
           start={req.start}
           addedIds={route.stops.map((s) => s.id)}
-          canAdd={!updating && route.stops.length < MAX_STOPS}
-          onAdd={addEvent}
+          canAdd={canAdd}
+          onAdd={(event: EventItem) => addStop(`event/${event.id}`, event)}
         />
-      ) : (
-        // Opt-in, so that viewing a route never spends the event API quota.
-        <Button variant="outline" className="w-full" onClick={() => setEventsOpen(true)} data-testid="events-open">
-          <CalendarDays /> {t("events.open")}
-        </Button>
       )}
 
       <p className="text-xs leading-relaxed text-muted" data-testid="attribution">
