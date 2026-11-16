@@ -1,13 +1,9 @@
 import { roundCoord } from "@/lib/geo";
 import { routeRequestSchema } from "@/lib/schemas";
-import type { RouteRequest } from "@/types";
+import type { LatLng, RouteRequest } from "@/types";
 
-// URL shape: /route?city=rome&lat=41.8986&lng=12.4769&d=60&theme=coffee
-//            &seed=1&stops=n123,w456
-// `stops` pins the exact stops, so a shared link shows the same route even if
-// OSM data or the scoring changes later.
-
-// Events added to the route travel in the same list with an "e" prefix.
+// /route?city=rome&lat=41.8986&lng=12.4769&d=60&theme=coffee&seed=1&stops=n123,w456,eABC
+// stops = OSM ids (n/w/r) and events (e), so a shared link reproduces the same route
 
 const PREFIX: Record<string, string> = { node: "n", way: "w", relation: "r", event: "e" };
 const TYPE: Record<string, string> = { n: "node", w: "way", r: "relation", e: "event" };
@@ -33,11 +29,10 @@ export function encodeRouteParams(req: RouteRequest): string {
   });
   if (req.seed) params.set("seed", String(req.seed));
   if (req.stopIds?.length) params.set("stops", encodeStopIds(req.stopIds));
-  // Commas are legal in a query string; keeping them makes the link readable.
+  // keep commas readable
   return params.toString().replaceAll("%2C", ",");
 }
 
-/** Returns null for anything that is not a valid route link. */
 export function decodeRouteParams(params: URLSearchParams): RouteRequest | null {
   const stops = params.get("stops");
   const seed = params.get("seed");
@@ -50,4 +45,23 @@ export function decodeRouteParams(params: URLSearchParams): RouteRequest | null 
     stopIds: stops ? decodeStopIds(stops) : undefined,
   });
   return result.success ? result.data : null;
+}
+
+// Google Maps takes at most 9 waypoints between origin and destination
+// (3 in a mobile browser; the app handles 9).
+const MAX_WAYPOINTS = 9;
+
+export function googleMapsUrl(start: LatLng, stops: LatLng[]): string | null {
+  if (stops.length === 0) return null;
+  const point = (p: LatLng) => `${roundCoord(p.lat)},${roundCoord(p.lng)}`;
+  const destination = stops[stops.length - 1];
+  const waypoints = stops.slice(0, -1).slice(0, MAX_WAYPOINTS);
+  const params = new URLSearchParams({
+    api: "1",
+    origin: point(start),
+    destination: point(destination),
+    travelmode: "walking",
+  });
+  if (waypoints.length) params.set("waypoints", waypoints.map(point).join("|"));
+  return `https://www.google.com/maps/dir/?${params}`;
 }
