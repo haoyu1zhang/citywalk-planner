@@ -42,5 +42,19 @@
   {"id":"way/225706552","name":"Basilica di San Marco","category":"historic","lat":43.77839,"lng":11.25899,"tagCount":17},
   {"id":"way/599901040","name":"Sant'Ambrogio","category":"historic","lat":43.77151,"lng":11.26677,"tagCount":13},
   {"id":"way/24881563","name":"Basilica di Santa Maria del Santo Spirito","category":"historic","lat":43.76741,"lng":11.24835,"tagCount":12},
-  {"id":"way/234428743","name":"Basilica della Santissima Annunziata","category":"historic","lat":43.77704,"lng":11.26135,"tagCount":11}
+  {"id":"way/234428743","name":"Basilica della Santissima Annunziata","category":"historic","lat":43.77704,"lng":11.26135,"tagCount":11},
+  {"id":"node/2361869699","name":"Edoardo","category":"ice_cream","lat":43.77255,"lng":11.2577,"tagCount":28},
+  {"id":"node/2361720639","name":"Antica Gelateria Fiorentina","category":"ice_cream","lat":43.77533,"lng":11.25255,"tagCount":27},
+  {"id":"node/4415509693","name":"Vivoli Gelato","category":"ice_cream","lat":43.76994,"lng":11.26011,"tagCount":25},
+  {"id":"node/468096517","name":"Gelateria Vivaldi","category":"ice_cream","lat":43.76493,"lng":11.25981,"tagCount":19},
+  {"id":"node/2361913988","name":"Trattoria il Contadino","category":"restaurant","lat":43.774,"lng":11.24564,"tagCount":26},
+  {"id":"node/4227367203","name":"Buca Niccolini","category":"restaurant","lat":43.77367,"lng":11.25608,"tagCount":25},
+  {"id":"node/5204833795","name":"Nirvana","category":"restaurant","lat":43.77497,"lng":11.24275,"tagCount":25},
+  {"id":"node/4903780922","name":"Libreria Brac","category":"restaurant","lat":43.76767,"lng":11.25828,"tagCount":24},
+  {"id":"node/5603996623","name":"La Luna","category":"restaurant","lat":43.77031,"lng":11.27407,"tagCount":24},
+  {"id":"node/12167715499","name":"Komugi","category":"restaurant","lat":43.77212,"lng":11.26139,"tagCount":24},
+  {"id":"node/5964310290","name":"I'Margartiaio","category":"bar","lat":43.76996,"lng":11.2579,"tagCount":22},
+  {"id":"node/1209006451","name":"Zoe Bar","category":"bar","lat":43.76492,"lng":11.25991,"tagCount":17},
+  {"id":"node/1359629069","name":"One Eyed Jack","category":"bar","lat":43.76946,"lng":11.24688,"tagCount":15},
+  {"id":"node/10080701308","name":"Ditta Artigianale","category":"bar","lat":43.77167,"lng":11.26645,"tagCount":15}
 ]

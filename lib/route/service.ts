@@ -1,8 +1,15 @@
 import { createHash } from "node:crypto";
 import { roundCoord } from "@/lib/geo";
-import type { PoiProvider, RoutedPath, RoutingProvider } from "@/lib/providers/types";
-import { MAX_DETOUR_FACTOR, STAY_MINUTES, targetMeters, themeCategories, walkMinutes } from "@/lib/themes";
-import type { LatLng, Poi, RouteRequest, RouteResponse, RouteStop } from "@/types";
+import type { EventProvider, PoiProvider, RoutedPath, RoutingProvider } from "@/lib/providers/types";
+import {
+  EVENT_STAY_MINUTES,
+  MAX_DETOUR_FACTOR,
+  STAY_MINUTES,
+  targetMeters,
+  themeCategories,
+  walkMinutes,
+} from "@/lib/themes";
+import type { EventItem, LatLng, Poi, RouteRequest, RouteResponse, RouteStop, WarningCode } from "@/types";
 import { estimateMeters, MIN_STOPS, dropCostliestStop, planRoute, searchRadius } from "./plan";
 import { orderStops } from "./order";
 
@@ -24,13 +31,32 @@ export interface RouteDeps {
   fallbackPois?: PoiProvider;
   /** null = offline mode: skip routing and draw straight lines. */
   routing: RoutingProvider | null;
+  /** Resolves events pinned in a shared link. null/absent = no event source. */
+  events?: EventProvider | null;
 }
 
-const FALLBACK_WARNING = "实时地点数据暂时不可用,当前使用的是内置示例数据。";
-const OFFLINE_WARNING = "离线演示模式:地点来自内置的 OpenStreetMap 数据快照,路线为直线连接,距离为估算值。";
-const STRAIGHT_WARNING = "步行路由服务暂时不可用,地图上是直线连接,距离为估算值。";
+/** An event the user added, shaped like a place so it can sit in the same list. */
+type EventStop = Omit<Poi, "category"> & { category: "event"; event: EventItem };
+type Stop = Poi | EventStop;
 
-function toStop(poi: Poi): RouteStop {
+function eventStop(event: EventItem): EventStop {
+  return { id: `event/${event.id}`, name: event.name, category: "event", lat: event.lat, lng: event.lng, tagCount: 0, event };
+}
+
+function toStop(poi: Stop): RouteStop {
+  if (poi.category === "event") {
+    const { startsAt, url, venue, category } = poi.event;
+    return {
+      id: poi.id,
+      name: poi.name,
+      category: "event",
+      lat: poi.lat,
+      lng: poi.lng,
+      suggestedStayMinutes: EVENT_STAY_MINUTES,
+      osmUrl: `https://www.openstreetmap.org/?mlat=${poi.lat}&mlon=${poi.lng}#map=18/${poi.lat}/${poi.lng}`,
+      event: { startsAt, url, venue, category },
+    };
+  }
   return {
     id: poi.id,
     name: poi.name,
@@ -63,19 +89,37 @@ async function withFallback<T>(
 }
 
 export async function generateRoute(req: RouteRequest, deps: RouteDeps): Promise<RouteResponse> {
-  const warnings: string[] = [];
+  const warnings: WarningCode[] = [];
   const target = targetMeters(req.durationMinutes);
-  let stops: Poi[] | null = null;
+  let stops: Stop[] | null = null;
+  const pinned = Boolean(req.stopIds);
 
   // 1. A shared link pins its stops: load exactly those, in the given order.
+  //    Places come from the POI provider, events from the event provider.
   if (req.stopIds) {
     const ids = req.stopIds;
-    const { items, usedFallback } = await withFallback(deps, (p) => p.byIds(ids));
-    if (items.length === ids.length) {
-      stops = items;
-      if (usedFallback && deps.pois.name !== "fixture") warnings.push(FALLBACK_WARNING);
+    const placeIds = ids.filter((id) => !id.startsWith("event/"));
+    const eventIds = ids.filter((id) => id.startsWith("event/")).map((id) => id.slice(6));
+
+    const places = placeIds.length
+      ? await withFallback(deps, (p) => p.byIds(placeIds))
+      : { items: [] as Poi[], usedFallback: false };
+    let events: EventItem[] = [];
+    if (eventIds.length && deps.events) {
+      events = await deps.events.byIds(eventIds).catch(() => []);
+    }
+    // An event that ended or was cancelled just drops out of the route.
+    if (events.length < eventIds.length) warnings.push("EVENT_UNAVAILABLE");
+
+    if (places.items.length === placeIds.length) {
+      const byId = new Map<string, Stop>([
+        ...places.items.map((p) => [p.id, p] as const),
+        ...events.map((e) => [`event/${e.id}`, eventStop(e)] as const),
+      ]);
+      stops = ids.flatMap((id) => byId.get(id) ?? []);
+      if (places.usedFallback && deps.pois.name !== "fixture") warnings.push("FALLBACK_POIS");
     } else {
-      warnings.push("链接里的部分站点已无法找到,已为你重新规划路线。");
+      warnings.push("PINNED_MISSING");
     }
   }
 
@@ -88,48 +132,55 @@ export async function generateRoute(req: RouteRequest, deps: RouteDeps): Promise
     };
     const { items, usedFallback, liveFailed } = await withFallback(deps, (p) => p.search(query));
     if (liveFailed && !usedFallback) {
-      throw new RouteError("POI_UNAVAILABLE", "地点数据服务(Overpass)暂时没有响应,请稍后再试。");
+      throw new RouteError("POI_UNAVAILABLE", "The place data service did not respond.");
     }
     if (usedFallback) {
       if (items.length === 0) {
         throw new RouteError(
           "POI_UNAVAILABLE",
-          "地点数据服务(Overpass)暂时没有响应,而这个位置不在内置示例数据的范围内。请稍后再试,或换一个预设城市。",
+          "The place data service did not respond and this location is outside the bundled sample data.",
         );
       }
-      warnings.push(FALLBACK_WARNING);
+      warnings.push("FALLBACK_POIS");
     }
     const plan = planRoute(items, { ...req, seed: req.seed });
     stops = plan.stops;
     warnings.push(...plan.warnings);
   }
 
-  if (stops.length < (req.stopIds ? 1 : MIN_STOPS)) {
-    throw new RouteError("NO_RESULTS", "这个起点附近没有找到足够的地点。试试换个主题、延长时间,或把起点移到市中心。");
+  if (stops.length < (pinned ? 1 : MIN_STOPS)) {
+    throw new RouteError("NO_RESULTS", "Not enough places were found near this start.");
   }
 
   // 3. Real walking path. One routing call per attempt, at most three attempts:
   //    if the streets make the walk exceed the hard detour limit, drop the
-  //    costliest stop and try again.
+  //    costliest stop and try again. Stops the user pinned are never dropped
+  //    behind their back (they get a warning instead), and a date keeps its
+  //    arc: only middle stops may go.
+  const mayTrim = !pinned;
+  const trim = (list: Stop[]): Stop[] =>
+    req.theme === "date" && list.length > 2
+      ? [list[0], ...dropCostliestStop(list[0], list.slice(1, -1)), list[list.length - 1]]
+      : orderStops(req.start, dropCostliestStop(req.start, list));
   let path: RoutedPath | null = null;
   if (deps.routing) {
     try {
       for (let attempt = 0; attempt < 3; attempt++) {
         path = await deps.routing.walk([req.start, ...stops]);
         const tooLong = path.distanceMeters > target * MAX_DETOUR_FACTOR;
-        if (!tooLong || stops.length <= MIN_STOPS || attempt === 2) break;
-        stops = orderStops(req.start, dropCostliestStop(req.start, stops));
-        if (attempt === 0) warnings.push("实际步行距离超出目标太多,已去掉最绕路的站点。");
+        if (!tooLong || !mayTrim || stops.length <= (req.theme === "date" ? 3 : MIN_STOPS) || attempt === 2) break;
+        stops = trim(stops);
+        if (attempt === 0) warnings.push("DETOUR_TRIMMED");
       }
     } catch {
       path = null;
-      warnings.push(STRAIGHT_WARNING);
+      warnings.push("STRAIGHT_LINES");
     }
   }
-  if (!deps.routing) warnings.push(OFFLINE_WARNING);
+  if (!deps.routing) warnings.push("OFFLINE");
   path ??= straightPath([req.start, ...stops]);
   if (path.distanceMeters > target * MAX_DETOUR_FACTOR) {
-    warnings.push("这条路线比所选时长明显更长,可以删掉一两站。");
+    warnings.push("LONGER_THAN_TARGET");
   }
 
   const routeId = createHash("sha1")

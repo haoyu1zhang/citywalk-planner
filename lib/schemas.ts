@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CATEGORIES, DURATIONS, THEMES } from "@/lib/themes";
+import { CATEGORIES, DURATIONS, EVENT_CATEGORIES, STOP_CATEGORIES, THEMES } from "@/lib/themes";
 
 export const latLngSchema = z.object({
   lat: z.number().min(-90).max(90),
@@ -7,6 +7,31 @@ export const latLngSchema = z.object({
 });
 
 const osmIdSchema = z.string().regex(/^(node|way|relation)\/\d+$/);
+const eventIdSchema = z.string().regex(/^event\/[A-Za-z0-9_-]{1,40}$/);
+/** OSM element ("node/123") or an event added to the route ("event/<id>"). */
+const stopIdSchema = z.union([osmIdSchema, eventIdSchema]);
+
+export const eventSchema = z.object({
+  /** Provider id, without the "event/" prefix. */
+  id: z.string().regex(/^[A-Za-z0-9_-]{1,40}$/),
+  name: z.string().min(1),
+  url: z.string().url(),
+  /** Local time at the venue: "YYYY-MM-DD" or "YYYY-MM-DDTHH:mm". */
+  startsAt: z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/),
+  category: z.enum(EVENT_CATEGORIES),
+  venue: z.string(),
+  lat: z.number(),
+  lng: z.number(),
+  priceFrom: z.number().nonnegative().optional(),
+  currency: z.string().optional(),
+});
+export type EventItem = z.infer<typeof eventSchema>;
+
+export const eventsResponseSchema = z.object({
+  /** false when no event provider key is configured on the server. */
+  configured: z.boolean(),
+  events: z.array(eventSchema),
+});
 
 export const poiSchema = z.object({
   id: osmIdSchema,
@@ -24,19 +49,21 @@ export const routeRequestSchema = z.object({
   durationMinutes: z.union(DURATIONS.map((d) => z.literal(d))),
   theme: z.enum(THEMES),
   /** Shared links pin the exact stops (in order) so they reproduce. */
-  stopIds: z.array(osmIdSchema).min(1).max(12).optional(),
+  stopIds: z.array(stopIdSchema).min(1).max(12).optional(),
   /** Bumped by "重新生成" to get a different but still deterministic pick. */
   seed: z.number().int().min(0).max(9999).optional(),
 });
 
 export const routeStopSchema = z.object({
-  id: osmIdSchema,
+  id: stopIdSchema,
   name: z.string(),
-  category: z.enum(CATEGORIES),
+  category: z.enum(STOP_CATEGORIES),
   lat: z.number(),
   lng: z.number(),
   suggestedStayMinutes: z.number().int().positive(),
   osmUrl: z.string().url(),
+  /** Present only for event stops. */
+  event: eventSchema.pick({ startsAt: true, url: true, venue: true, category: true }).optional(),
 });
 
 export const lineStringSchema = z.object({
@@ -53,12 +80,26 @@ export const routeResponseSchema = z.object({
   }),
   stops: z.array(routeStopSchema),
   geometry: lineStringSchema,
+  /** Language-neutral codes (see WARNING_CODES); the UI translates them. */
   warnings: z.array(z.string()),
 });
 
+export const WARNING_CODES = [
+  "FALLBACK_POIS",
+  "OFFLINE",
+  "STRAIGHT_LINES",
+  "PINNED_MISSING",
+  "EVENT_UNAVAILABLE",
+  "FEW_PLACES",
+  "SHORTER_THAN_TARGET",
+  "DETOUR_TRIMMED",
+  "LONGER_THAN_TARGET",
+] as const;
+export type WarningCode = (typeof WARNING_CODES)[number];
+
 export const apiErrorSchema = z.object({
   error: z.object({
-    code: z.enum(["BAD_REQUEST", "NO_RESULTS", "POI_UNAVAILABLE", "INTERNAL"]),
+    code: z.enum(["BAD_REQUEST", "NO_RESULTS", "POI_UNAVAILABLE", "EVENTS_UNAVAILABLE", "INTERNAL"]),
     message: z.string(),
   }),
 });

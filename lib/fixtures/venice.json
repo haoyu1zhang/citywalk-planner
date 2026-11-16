@@ -43,5 +43,19 @@
   {"id":"node/10589198696","name":"Antonio Canaletto","category":"historic","lat":45.43689,"lng":12.33891,"tagCount":11},
   {"id":"way/138802170","name":"Chiesa di San Lazzaro dei Mendicanti","category":"historic","lat":45.44119,"lng":12.34264,"tagCount":11},
   {"id":"node/12516830637","name":"Mausoleo di Domenico Contarini","category":"historic","lat":45.4338,"lng":12.33084,"tagCount":10},
-  {"id":"way/555645445","name":"Bartolomeo Colleoni","category":"historic","lat":45.4392,"lng":12.34136,"tagCount":10}
+  {"id":"way/555645445","name":"Bartolomeo Colleoni","category":"historic","lat":45.4392,"lng":12.34136,"tagCount":10},
+  {"id":"node/3202404674","name":"Gelateria Nico","category":"ice_cream","lat":45.42961,"lng":12.32614,"tagCount":22},
+  {"id":"node/2089190146","name":"Gelato Fantasy","category":"ice_cream","lat":45.43499,"lng":12.33715,"tagCount":20},
+  {"id":"node/4368513896","name":"Bacaro del Gelato","category":"ice_cream","lat":45.44407,"lng":12.33305,"tagCount":18},
+  {"id":"node/3527984723","name":"Il Golosone","category":"ice_cream","lat":45.44173,"lng":12.32277,"tagCount":14},
+  {"id":"node/4217838398","name":"Ristorante Al Mercante","category":"restaurant","lat":45.43605,"lng":12.33893,"tagCount":41},
+  {"id":"node/13359978801","name":"Trattoria La Divina Comida","category":"restaurant","lat":45.43618,"lng":12.32388,"tagCount":31},
+  {"id":"node/5238321396","name":"Rossopomodoro","category":"restaurant","lat":45.44174,"lng":12.32112,"tagCount":27},
+  {"id":"node/10827665082","name":"Ristorante La Terrazza","category":"restaurant","lat":45.43514,"lng":12.33593,"tagCount":25},
+  {"id":"node/9064595565","name":"Trattoria Storica","category":"restaurant","lat":45.44241,"lng":12.33822,"tagCount":23},
+  {"id":"node/9688431151","name":"Ravioleria Venezia","category":"restaurant","lat":45.43724,"lng":12.33105,"tagCount":23},
+  {"id":"node/2964496690","name":"Pasticceria Alla Bragora","category":"bar","lat":45.435,"lng":12.34684,"tagCount":28},
+  {"id":"node/1522370224","name":"Tera Ferma","category":"bar","lat":45.44392,"lng":12.32804,"tagCount":23},
+  {"id":"node/5564763691","name":"Bar al Canton","category":"bar","lat":45.43687,"lng":12.34738,"tagCount":23},
+  {"id":"node/6417020185","name":"Bottega del caffé Dersut","category":"bar","lat":45.43652,"lng":12.32659,"tagCount":21}
 ]

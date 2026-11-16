@@ -8,6 +8,7 @@ import type {
   routeResponseSchema,
   routeStopSchema,
 } from "@/lib/schemas";
+import type { WarningCode } from "@/lib/schemas";
 import type { CATEGORIES, DURATIONS, THEMES } from "@/lib/themes";
 
 export type LatLng = z.infer<typeof latLngSchema>;
@@ -21,6 +22,8 @@ export type RouteStop = z.infer<typeof routeStopSchema>;
 export type RouteRequest = z.infer<typeof routeRequestSchema>;
 export type RouteResponse = z.infer<typeof routeResponseSchema>;
 
+export type { EventItem, WarningCode } from "@/lib/schemas";
+
 /** Internal result of the planning algorithm, before real routing. */
 export interface RoutePlan {
   start: LatLng;
@@ -28,5 +31,5 @@ export interface RoutePlan {
   targetMeters: number;
   /** Straight-line length × street factor; replaced by the routed length. */
   estimatedMeters: number;
-  warnings: string[];
+  warnings: WarningCode[];
 }

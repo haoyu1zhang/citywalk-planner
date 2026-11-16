@@ -17,7 +17,7 @@ import type { Category, Poi } from "../types";
 const RADIUS = 1800;
 const MIN_SPACING = 120;
 const KEEP: Record<Category, number> = {
-  cafe: 10, park: 6, bookshop: 4, library: 2, art_gallery: 4, viewpoint: 4, attraction: 6, museum: 5, historic: 5,
+  cafe: 10, park: 6, bookshop: 4, library: 2, art_gallery: 4, viewpoint: 4, attraction: 6, museum: 5, historic: 5, ice_cream: 4, restaurant: 6, bar: 4,
 };
 const ENDPOINT = process.env.OVERPASS_URLS?.split(",")[0] ?? "https://overpass-api.de/api/interpreter";
 

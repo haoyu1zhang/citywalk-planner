@@ -42,5 +42,19 @@
   {"id":"way/325434925","name":"Cattedrale di San Pietro","category":"historic","lat":44.49575,"lng":11.34347,"tagCount":15},
   {"id":"node/2558829627","name":"La vita che continua","category":"historic","lat":44.50537,"lng":11.34325,"tagCount":13},
   {"id":"way/1192911978","name":"Basilica di Santo Stefano","category":"historic","lat":44.49203,"lng":11.34872,"tagCount":12},
-  {"id":"way/1234586618","name":"Chiesa di San Martino","category":"historic","lat":44.49712,"lng":11.34688,"tagCount":12}
+  {"id":"way/1234586618","name":"Chiesa di San Martino","category":"historic","lat":44.49712,"lng":11.34688,"tagCount":12},
+  {"id":"node/1704575385","name":"La Sorbetteria Castiglione","category":"ice_cream","lat":44.4878,"lng":11.34818,"tagCount":21},
+  {"id":"node/5426719921","name":"Majori Gelati","category":"ice_cream","lat":44.49721,"lng":11.34605,"tagCount":20},
+  {"id":"node/9970891685","name":"Cremeria la Vecchia Stalla","category":"ice_cream","lat":44.493,"lng":11.34746,"tagCount":17},
+  {"id":"node/10221479372","name":"Sablé gelato","category":"ice_cream","lat":44.50137,"lng":11.34423,"tagCount":16},
+  {"id":"node/8171386003","name":"Baba Turkish Restorant & Kafe","category":"restaurant","lat":44.4939,"lng":11.35815,"tagCount":30},
+  {"id":"node/3296862972","name":"Trattoria Oberdan","category":"restaurant","lat":44.4983,"lng":11.34644,"tagCount":26},
+  {"id":"node/1704657750","name":"Rosteria Luciano","category":"restaurant","lat":44.49752,"lng":11.33957,"tagCount":25},
+  {"id":"node/10110173117","name":"Da Michele","category":"restaurant","lat":44.49653,"lng":11.34653,"tagCount":25},
+  {"id":"node/5272107594","name":"Sfoglia Rina","category":"restaurant","lat":44.49318,"lng":11.34634,"tagCount":22},
+  {"id":"node/3657848132","name":"Miyako Kaiten Sushi","category":"restaurant","lat":44.4975,"lng":11.34384,"tagCount":19},
+  {"id":"node/3183130844","name":"Le Stanze","category":"bar","lat":44.49803,"lng":11.34778,"tagCount":21},
+  {"id":"node/4793773785","name":"TheJackBar","category":"bar","lat":44.5046,"lng":11.33266,"tagCount":20},
+  {"id":"node/6550744785","name":"Nobody","category":"bar","lat":44.49536,"lng":11.34493,"tagCount":19},
+  {"id":"node/6978103386","name":"Beer 4 Bunnies","category":"bar","lat":44.49553,"lng":11.3358,"tagCount":19}
 ]

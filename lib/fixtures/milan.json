@@ -44,5 +44,19 @@
   {"id":"node/1277284761","name":"Statua di Leonardo da Vinci","category":"historic","lat":45.46697,"lng":9.19001,"tagCount":16},
   {"id":"way/27755672","name":"Tempio della Vittoria","category":"historic","lat":45.46323,"lng":9.17563,"tagCount":14},
   {"id":"node/2061403098","name":"Fontana di San Francesco","category":"historic","lat":45.47617,"lng":9.192,"tagCount":12},
-  {"id":"node/2524655282","name":"L.O.V.E.","category":"historic","lat":45.46481,"lng":9.18328,"tagCount":12}
+  {"id":"node/2524655282","name":"L.O.V.E.","category":"historic","lat":45.46481,"lng":9.18328,"tagCount":12},
+  {"id":"node/3007564267","name":"Ciacco","category":"ice_cream","lat":45.46368,"lng":9.18682,"tagCount":27},
+  {"id":"node/3686990217","name":"Venchi","category":"ice_cream","lat":45.46795,"lng":9.17539,"tagCount":26},
+  {"id":"node/13277497121","name":"Mango Bongo Gelateria","category":"ice_cream","lat":45.46194,"lng":9.19506,"tagCount":18},
+  {"id":"node/1762614437","name":"Rivareno Gelato","category":"ice_cream","lat":45.45201,"lng":9.18315,"tagCount":17},
+  {"id":"node/4769477525","name":"Original Pizza","category":"restaurant","lat":45.46199,"lng":9.19523,"tagCount":24},
+  {"id":"node/8739609223","name":"Kashima","category":"restaurant","lat":45.46546,"lng":9.20703,"tagCount":24},
+  {"id":"node/11708585636","name":"AltaRè","category":"restaurant","lat":45.4548,"lng":9.18042,"tagCount":23},
+  {"id":"node/13001316593","name":"Cracco in Galleria","category":"restaurant","lat":45.46534,"lng":9.18987,"tagCount":23},
+  {"id":"node/4550686867","name":"El Pastee De Milan","category":"restaurant","lat":45.46737,"lng":9.17313,"tagCount":22},
+  {"id":"node/10944515516","name":"DedasPuri","category":"restaurant","lat":45.46021,"lng":9.1758,"tagCount":22},
+  {"id":"node/4978187693","name":"Nottingham Forest","category":"bar","lat":45.46872,"lng":9.20671,"tagCount":22},
+  {"id":"node/1285244654","name":"Bar Bianco","category":"bar","lat":45.47355,"lng":9.17753,"tagCount":20},
+  {"id":"node/6880924247","name":"Todos a Cuba","category":"bar","lat":45.45784,"lng":9.18051,"tagCount":16},
+  {"id":"node/7126823730","name":"Big Store de Milàn","category":"bar","lat":45.45766,"lng":9.17725,"tagCount":16}
 ]

@@ -1,15 +1,16 @@
 "use client";
 
-import { LoaderCircle, MapPin, Search } from "lucide-react";
+import { Footprints, Heart, LoaderCircle, MapPin, Search, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useI18n } from "@/components/I18nProvider";
 import LazyMap from "@/components/LazyMap";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CITIES, type City } from "@/lib/cities";
 import { geocodeResponseSchema, type GeocodeResult } from "@/lib/schemas";
 import { encodeRouteParams } from "@/lib/share";
-import { DURATIONS, THEME_CONFIG, THEMES, targetMeters } from "@/lib/themes";
+import { DURATIONS, THEMES, targetMeters } from "@/lib/themes";
 import { cn, formatKm } from "@/lib/utils";
 import type { Duration, LatLng, Theme } from "@/types";
 
@@ -17,7 +18,13 @@ type SearchState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "done"; results: GeocodeResult[] }
-  | { status: "error"; message: string };
+  | { status: "error" };
+
+type Mode = "walk" | "date";
+/** Where the walk starts: the city's default square, a searched landmark, or a map tap. */
+type StartSource = { kind: "default" } | { kind: "search"; label: string } | { kind: "map" };
+
+const WALK_THEMES = THEMES.filter((t) => t !== "date");
 
 const chip = (selected: boolean) =>
   cn(
@@ -38,19 +45,28 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 export function PlannerForm() {
   const router = useRouter();
+  const { t, locale } = useI18n();
+  const [mode, setMode] = useState<Mode>("walk");
   const [city, setCity] = useState<City>(CITIES[0]);
   const [duration, setDuration] = useState<Duration>(60);
-  const [theme, setTheme] = useState<Theme>("coffee");
+  const [theme, setTheme] = useState<Exclude<Theme, "date">>("coffee");
   const [start, setStart] = useState<LatLng>(CITIES[0].center);
-  const [startLabel, setStartLabel] = useState(CITIES[0].startLabel);
+  const [startSource, setStartSource] = useState<StartSource>({ kind: "default" });
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState<SearchState>({ status: "idle" });
   const [submitting, setSubmitting] = useState(false);
 
+  const startLabel =
+    startSource.kind === "default"
+      ? t(`cityStart.${city.id}` as "cityStart.rome")
+      : startSource.kind === "search"
+        ? startSource.label
+        : t("form.pickedOnMap");
+
   function chooseCity(next: City) {
     setCity(next);
     setStart(next.center);
-    setStartLabel(next.startLabel);
+    setStartSource({ kind: "default" });
     setSearch({ status: "idle" });
   }
 
@@ -65,30 +81,59 @@ export function PlannerForm() {
       if (!res.ok || !parsed.success) throw new Error("geocode failed");
       setSearch({ status: "done", results: parsed.data.results });
     } catch {
-      setSearch({ status: "error", message: "地标搜索暂时不可用,请直接在地图上点选起点。" });
+      setSearch({ status: "error" });
     }
   }
 
-  function generate() {
+  function generate(seed?: number) {
     setSubmitting(true);
     router.push(
-      `/route?${encodeRouteParams({ city: city.id, start, durationMinutes: duration, theme })}`,
+      `/route?${encodeRouteParams({
+        city: city.id,
+        start,
+        durationMinutes: duration,
+        theme: mode === "date" ? "date" : theme,
+        seed,
+      })}`,
     );
   }
 
   return (
     <div className="mx-auto grid w-full max-w-6xl gap-5 p-4 lg:grid-cols-[400px_1fr] lg:grid-rows-[auto_1fr] lg:gap-x-8 lg:p-8">
       <div className="space-y-6">
+        <div
+          role="radiogroup"
+          aria-label={t("mode.label")}
+          className="grid grid-cols-2 gap-1 rounded-xl border border-line bg-surface p-1"
+        >
+          {(["walk", "date"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              role="radio"
+              aria-checked={mode === m}
+              onClick={() => setMode(m)}
+              className={cn(
+                "flex min-h-11 items-center justify-center gap-2 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                mode === m ? "bg-accent text-white" : "text-muted hover:text-ink",
+              )}
+            >
+              {m === "walk" ? <Footprints className="size-4" aria-hidden /> : <Heart className="size-4" aria-hidden />}
+              {t(`mode.${m}`)}
+            </button>
+          ))}
+        </div>
+
         <div>
           <h1 className="font-display text-3xl font-semibold leading-tight tracking-tight text-balance">
-            今天去哪儿走走?
+            {t(mode === "date" ? "home.dateTitle" : "home.title")}
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-muted">
-            选好城市、时长和主题,生成一条用真实街道连起来的漫步路线。
+            {t(mode === "date" ? "home.dateSubtitle" : "home.subtitle")}
           </p>
         </div>
 
-        <Field label="城市">
+        <Field label={t("form.city")}>
           <div className="flex flex-wrap gap-2">
             {CITIES.map((c) => (
               <button
@@ -97,14 +142,15 @@ export function PlannerForm() {
                 aria-pressed={c.id === city.id}
                 onClick={() => chooseCity(c)}
                 className={chip(c.id === city.id)}
+                data-city={c.id}
               >
-                {c.name}
+                {t(`city.${c.id}` as "city.rome")}
               </button>
             ))}
           </div>
         </Field>
 
-        <Field label="步行时长">
+        <Field label={t("form.duration")}>
           <div className="grid grid-cols-4 gap-2">
             {DURATIONS.map((d) => (
               <button
@@ -113,34 +159,41 @@ export function PlannerForm() {
                 aria-pressed={d === duration}
                 onClick={() => setDuration(d)}
                 className={cn(chip(d === duration), "whitespace-nowrap px-1")}
+                data-duration={d}
               >
-                {d} 分钟
+                {t("form.minutes", { n: d })}
               </button>
             ))}
           </div>
-          <p className="text-xs text-muted">
-            约 {formatKm(targetMeters(duration))},按 4.5 km/h 估算,不含停留时间。
+          <p className="text-xs text-muted">{t("form.durationHint", { km: formatKm(targetMeters(duration), locale) })}</p>
+        </Field>
+
+        {mode === "walk" ? (
+          <Field label={t("form.theme")}>
+            <div className="grid grid-cols-3 gap-2">
+              {WALK_THEMES.map((th) => (
+                <button
+                  key={th}
+                  type="button"
+                  aria-pressed={th === theme}
+                  onClick={() => setTheme(th)}
+                  className={cn(chip(th === theme), "px-1")}
+                  data-theme={th}
+                >
+                  {t(`theme.${th}`)}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted">{t(`themeHint.${theme}`)}</p>
+          </Field>
+        ) : (
+          <p className="flex items-start gap-2 rounded-xl bg-accent-soft p-3 text-sm leading-relaxed text-accent-strong">
+            <Heart className="mt-0.5 size-4 shrink-0" aria-hidden />
+            {t("form.dateArc")}
           </p>
-        </Field>
+        )}
 
-        <Field label="主题">
-          <div className="grid grid-cols-3 gap-2">
-            {THEMES.map((t) => (
-              <button
-                key={t}
-                type="button"
-                aria-pressed={t === theme}
-                onClick={() => setTheme(t)}
-                className={chip(t === theme)}
-              >
-                {THEME_CONFIG[t].label}
-              </button>
-            ))}
-          </div>
-          <p className="text-xs text-muted">{THEME_CONFIG[theme].hint}</p>
-        </Field>
-
-        <Field label="起点">
+        <Field label={t("form.start")}>
           <form
             className="flex gap-2"
             onSubmit={(e) => {
@@ -151,18 +204,25 @@ export function PlannerForm() {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="输入地标,如 Fontana di Trevi"
-              aria-label="搜索地标作为起点"
+              placeholder={t("form.searchPlaceholder")}
+              aria-label={t("form.searchLabel")}
               enterKeyHint="search"
             />
-            <Button type="submit" variant="outline" size="icon" aria-label="搜索" disabled={search.status === "loading"}>
+            <Button
+              type="submit"
+              variant="outline"
+              size="icon"
+              className="shrink-0"
+              aria-label={t("form.search")}
+              disabled={search.status === "loading"}
+            >
               {search.status === "loading" ? <LoaderCircle className="animate-spin" /> : <Search />}
             </Button>
           </form>
           {search.status === "done" && search.results.length === 0 && (
-            <p className="text-sm text-muted">没有找到这个地标,换个写法,或直接在地图上点选。</p>
+            <p className="text-sm text-muted">{t("form.searchEmpty")}</p>
           )}
-          {search.status === "error" && <p className="text-sm text-warn-ink">{search.message}</p>}
+          {search.status === "error" && <p className="text-sm text-warn-ink">{t("form.searchError")}</p>}
           {search.status === "done" && search.results.length > 0 && (
             <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
               {search.results.map((r) => (
@@ -172,7 +232,7 @@ export function PlannerForm() {
                     className="block min-h-11 w-full px-3 py-2 text-left text-sm hover:bg-accent-soft"
                     onClick={() => {
                       setStart({ lat: r.lat, lng: r.lng });
-                      setStartLabel(r.name.split(",")[0]);
+                      setStartSource({ kind: "search", label: r.name.split(",")[0] });
                       setSearch({ status: "idle" });
                       setQuery("");
                     }}
@@ -186,8 +246,11 @@ export function PlannerForm() {
           <p className="flex items-start gap-1.5 text-sm text-muted">
             <MapPin className="mt-0.5 size-4 shrink-0 text-route" aria-hidden />
             <span>
-              当前起点:<span className="font-medium text-ink" data-testid="start-label">{startLabel}</span>
-              。也可以点地图换一个。
+              {t("form.currentStart")}
+              <span className="font-medium text-ink" data-testid="start-label">
+                {startLabel}
+              </span>
+              . {t("form.pickHint")}
             </span>
           </p>
         </Field>
@@ -197,18 +260,32 @@ export function PlannerForm() {
         <LazyMap
           center={start}
           start={start}
+          startLabel={t("map.start")}
           onPick={(p) => {
             setStart(p);
-            setStartLabel("地图上选的位置");
+            setStartSource({ kind: "map" });
           }}
         />
       </div>
 
-      <div className="sticky bottom-0 -mx-4 border-t border-line bg-paper/95 p-4 backdrop-blur lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:p-0">
-        <Button size="lg" className="w-full" onClick={generate} disabled={submitting}>
+      <div className="sticky bottom-0 -mx-4 flex gap-2 border-t border-line bg-paper/95 p-4 backdrop-blur lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:p-0">
+        <Button size="lg" className="min-w-0 flex-1 px-3" onClick={() => generate()} disabled={submitting} data-testid="generate">
           {submitting && <LoaderCircle className="animate-spin" />}
-          生成路线
+          <span className="truncate">{t("form.generate")}</span>
         </Button>
+        {mode === "date" && (
+          <Button
+            size="lg"
+            variant="outline"
+            className="min-w-0 shrink px-3"
+            // A random seed: every tap is a different, but shareable, evening.
+            onClick={() => generate(1 + Math.floor(Math.random() * 9998))}
+            disabled={submitting}
+            data-testid="surprise"
+          >
+            <Sparkles /> <span className="truncate">{t("form.surprise")}</span>
+          </Button>
+        )}
       </div>
     </div>
   );

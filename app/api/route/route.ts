@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createFixtureProvider } from "@/lib/providers/fixtures";
 import { createOsrmProvider } from "@/lib/providers/osrm";
 import { createOverpassProvider } from "@/lib/providers/overpass";
+import { createTicketmasterProvider } from "@/lib/providers/ticketmaster";
 import { generateRoute, RouteError } from "@/lib/route/service";
 import { routeRequestSchema, type ApiErrorCode } from "@/lib/schemas";
 
@@ -15,7 +16,12 @@ const offline = process.env.CITYWALK_OFFLINE === "1";
 const fixtures = createFixtureProvider();
 const deps = offline
   ? { pois: fixtures, routing: null }
-  : { pois: createOverpassProvider(), fallbackPois: fixtures, routing: createOsrmProvider() };
+  : {
+      pois: createOverpassProvider(),
+      fallbackPois: fixtures,
+      routing: createOsrmProvider(),
+      events: createTicketmasterProvider(),
+    };
 
 function fail(status: number, code: ApiErrorCode, message: string) {
   return NextResponse.json({ error: { code, message } }, { status });
@@ -26,10 +32,10 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return fail(400, "BAD_REQUEST", "请求体不是合法的 JSON。");
+    return fail(400, "BAD_REQUEST", "Request body is not valid JSON.");
   }
   const parsed = routeRequestSchema.safeParse(body);
-  if (!parsed.success) return fail(400, "BAD_REQUEST", "请求参数不合法。");
+  if (!parsed.success) return fail(400, "BAD_REQUEST", "Invalid request parameters.");
 
   try {
     return NextResponse.json(await generateRoute(parsed.data, deps));
@@ -38,6 +44,6 @@ export async function POST(request: Request) {
       return fail(err.code === "NO_RESULTS" ? 422 : 502, err.code, err.message);
     }
     console.error("route generation failed", err);
-    return fail(500, "INTERNAL", "生成路线时出了点问题,请重试。");
+    return fail(500, "INTERNAL", "Route generation failed.");
   }
 }

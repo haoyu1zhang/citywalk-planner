@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     );
   } catch {
     return NextResponse.json(
-      { results: [], error: { code: "POI_UNAVAILABLE", message: "地标搜索暂时不可用,请直接在地图上点选起点。" } },
+      { results: [], error: { code: "POI_UNAVAILABLE", message: "Geocoding is unavailable." } },
       { status: 502 },
     );
   }

@@ -20,13 +20,16 @@
 - 总距离、步行时间(按 4.5 km/h)、总停留时间
 - 删除站点、换一条(同一个链接永远得到同一条路线)
 - 分享:链接里带着完整参数和站点 ID,打开即复现;导出 GeoJSON
+- **约会模式**:不用选主题,按“甜品或咖啡 → 散步 → 看风景 → 晚餐或小酌”的节奏排一条两个人的路线;“帮我们决定”每点一次换一条
+- **附近的线下活动**:在路线页按时间(今天 / 本周末 / 7 天 / 30 天)、类别和关键词查找活动,一键加入路线(自动插在最顺路的位置),分享链接里也带着
+- **三种语言**:中文、English、Italiano,默认跟随浏览器语言,可在页面右上角切换
 - 外部服务出问题时不白屏:Overpass 不可用 → 内置数据快照;路由不可用 → 直线连接;都会明确提示
 
 ## 技术栈
 
 Next.js 15(App Router)· TypeScript strict · Tailwind CSS v4 + shadcn/ui 风格组件 · react-leaflet · Zod · Vitest · Playwright
 
-不需要任何 API key。
+核心功能不需要任何 API key。活动功能需要一个免费的 Ticketmaster key(见下文),没配置时这一块会说明原因,其余功能不受影响。
 
 ## 本地运行
 
@@ -53,19 +56,23 @@ app/
   route/page.tsx        结果页:地图 + 站点列表 + 分享/导出
   api/route/route.ts    POST /api/route
   api/geocode/route.ts  GET  /api/geocode?q=
-components/             PlannerForm, RouteView, MapView(仅客户端加载), ui/
+  api/events/route.ts   GET  /api/events
+components/             PlannerForm, RouteView, EventsPanel, LanguageSwitcher, MapView(仅客户端加载), ui/
 lib/
   schemas.ts            所有 Zod schema(请求、响应、POI)
   themes.ts             主题 → 类别 → OSM 标签,以及全部可调常数
   http.ts               fetch 封装:超时、有限重试、内存缓存、User-Agent
-  providers/            overpass / osrm / nominatim / fixtures,统一接口,可替换
+  providers/            overpass / osrm / nominatim / ticketmaster / fixtures,统一接口,可替换
   route/
     candidates.ts       过滤:类别、无名、过远、重复
     score.ts            候选评分
     order.ts            最近邻 + 2-opt
     plan.ts             选点 → 排序 → 贴合目标距离(纯函数,无 I/O)
+    date.ts             约会模式:按槽位排出一条有节奏的路线
     service.ts          编排:取数据 → 规划 → 真实路由 → 降级
   share.ts, geojson.ts  URL 编解码、GeoJSON 导出
+  events.ts             活动的日期范围、日期格式、最顺路的插入位置
+  i18n/                 三种语言的字典、语言协商、服务端读取 cookie
   fixtures/             预设城市的真实 Overpass 数据快照
 types/                  由 Zod schema 推导出的类型
 tests/unit, tests/e2e
@@ -88,7 +95,7 @@ POST /api/route ─ Zod 校验
 
 ```jsonc
 // 请求
-{ "city": "rome", "start": { "lat": 41.8986, "lng": 12.4769 }, "durationMinutes": 60, "theme": "coffee",
+{ "city": "rome", "start": { "lat": 41.8986, "lng": 12.4769 }, "durationMinutes": 60, "theme": "coffee",   // 或 "date"
   "stopIds": ["node/261859088"],   // 可选:固定站点,用于分享链接和删除站点
   "seed": 1 }                      // 可选:“换一条”
 // 响应
@@ -103,6 +110,21 @@ POST /api/route ─ Zod 校验
 
 `GET /api/geocode?q=` 代理 Nominatim,带 User-Agent 和 24 小时缓存。只在用户提交时查询(Nominatim 禁止自动补全)。
 
+`GET /api/events?lat=&lng=&from=YYYY-MM-DD&to=YYYY-MM-DD&q=&category=` 返回 `{ configured, events }`。没有配置 key 时 `configured` 为 `false`。
+
+### 活动数据
+
+活动来自 [Ticketmaster Discovery API](https://developer.ticketmaster.com/)(免费 key,每天 5000 次、每秒 5 次)。它收录的都是有实体场馆的演出、戏剧、体育赛事等,正好是“线下活动”。
+
+1. 在 developer.ticketmaster.com 注册并创建应用,复制 Consumer Key
+2. 本地写进 `.env.local`:`TICKETMASTER_API_KEY=...`;Vercel 上加到 Environment Variables 后重新部署
+
+实现上是一个 `EventProvider` 接口(`lib/providers/ticketmaster.ts`),换别的数据源只需要再实现一个。加入路线的活动以 `event/<id>` 的形式和 OSM 站点放在同一个列表里,打开分享链接时按 ID 重新取回;活动结束后会从路线里去掉并提示。
+
+### 多语言
+
+没有引入 i18n 库:`lib/i18n/messages.ts` 里三份同构的字典(TypeScript 保证键一致,单元测试再检查占位符和运行时拼出来的键)。语言存在 cookie 里,服务端组件和客户端组件用同一份字典。API 返回的 `warnings` 和错误是语言无关的代码(如 `FALLBACK_POIS`),由界面翻译。
+
 ### 算法
 
 - 目标距离 = 时长 × 4.5 km/h,允许 ±20%;搜索半径 = 目标距离 × 0.45。
@@ -110,6 +132,8 @@ POST /api/route ─ Zod 校验
 - 每类上限:主题只有一个主类别时最多 3 个,否则每个主类别 2 个,配角类别各 1 个。
 - 排序:最近邻构造,2-opt 优化(起点固定的开放路径)。
 - 硬上限:真实步行距离不超过目标的 1.5 倍,超过就删掉最绕的一站再算。
+- 约会模式(`lib/route/date.ts`)不做 2-opt:每一站是一个“槽位”(开场、散步 ×N、收尾),顺序本身就是内容;最后一个散步槽位优先选观景点;超长时只删中间的站。
+- 用户自己固定的站点(删过站、加过活动的路线)不会被自动删除,超长时只给提示。
 
 ## 技术难点
 
@@ -125,7 +149,10 @@ POST /api/route ─ Zod 校验
 
 - 默认路由服务是 FOSSGIS 的 `routing.openstreetmap.de`(有步行 profile)。常见的 `router.project-osrm.org` demo 只提供驾车 profile,不适合步行。两者都是公共服务,没有 SLA;正式使用应自建 OSRM 或换 Valhalla。
 - 内存缓存在 Vercel 的 serverless 环境里只在实例存活期间有效。
-- 内置数据只覆盖 5 个预设城市中心约 1.8 km 的范围,每城约 45 个地点。120 分钟路线在离线模式下会偏短。用 `npm run fixtures` 可以重新生成。
+- 内置数据只覆盖 5 个预设城市中心约 1.8 km 的范围,每城约 60 个地点。120 分钟路线在离线模式下会偏短。用 `npm run fixtures` 可以重新生成。
+- 活动功能的 Ticketmaster 解析是按官方文档的响应格式写的,测试用的是手写样例;还没有用真实 key 跑过。
+- 活动搜索按 UTC 的日界线取时间段,和意大利当地时间差一两个小时。
+- 地名是 OSM 里的本地名称(意大利语),不随界面语言翻译。
 - OSM 的“景点”标签质量不一,偶尔会选到不太值得停留的地方。
 
 ## 部署到 Vercel
@@ -138,6 +165,8 @@ POST /api/route ─ Zod 校验
 ## 后续计划
 
 - 拖拽调整站点顺序
+- 约会模式按时段(下午 / 傍晚 / 夜晚)调整节奏,并参考营业时间
+- 更多活动来源(各城市的开放数据、Eventbrite 等)
 - 环形路线(回到起点)
 - 用 Supabase 保存路线,生成短链接
 - 营业时间过滤(OSM `opening_hours`)

@@ -2,6 +2,7 @@
 
 import {
   ArrowLeft,
+  CalendarDays,
   Check,
   Download,
   ExternalLink,
@@ -14,23 +15,35 @@ import {
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { EventsPanel } from "@/components/EventsPanel";
+import { useI18n } from "@/components/I18nProvider";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import LazyMap from "@/components/LazyMap";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { findCity } from "@/lib/cities";
 import { toGeoJSON } from "@/lib/geojson";
-import { apiErrorSchema, routeResponseSchema } from "@/lib/schemas";
+import { cheapestInsertion, formatEventDate } from "@/lib/events";
+import { translateMaybe, type MessageKey } from "@/lib/i18n";
+import { apiErrorSchema, routeResponseSchema, type EventItem } from "@/lib/schemas";
 import { decodeRouteParams, encodeRouteParams } from "@/lib/share";
-import { CATEGORY_LABEL, THEME_CONFIG } from "@/lib/themes";
 import { cn, formatKm } from "@/lib/utils";
 import type { RouteRequest, RouteResponse } from "@/types";
 
 type State =
   | { status: "loading" }
   | { status: "ready"; route: RouteResponse; updating: boolean }
-  | { status: "error"; message: string; canRetry: boolean };
+  | { status: "error"; messageKey: MessageKey };
 
 const MIN_STOPS = 2;
+const MAX_STOPS = 12;
+
+/** Carries the API error code so the UI can show it in the visitor's language. */
+class ApiError extends Error {
+  constructor(readonly code: string) {
+    super(code);
+  }
+}
 
 async function requestRoute(req: RouteRequest, signal: AbortSignal): Promise<RouteResponse> {
   const res = await fetch("/api/route", {
@@ -42,7 +55,7 @@ async function requestRoute(req: RouteRequest, signal: AbortSignal): Promise<Rou
   const json: unknown = await res.json().catch(() => null);
   if (!res.ok) {
     const err = apiErrorSchema.safeParse(json);
-    throw new Error(err.success ? err.data.error.message : "生成路线时出了点问题,请重试。");
+    throw new ApiError(err.success ? err.data.error.code : "INTERNAL");
   }
   // Never trust the wire, even our own API.
   return routeResponseSchema.parse(json);
@@ -50,6 +63,8 @@ async function requestRoute(req: RouteRequest, signal: AbortSignal): Promise<Rou
 
 export function RouteView() {
   const router = useRouter();
+  const { t, locale } = useI18n();
+  const [eventsOpen, setEventsOpen] = useState(false);
   const searchParams = useSearchParams();
   const queryString = searchParams.toString();
   const req = useMemo(() => decodeRouteParams(new URLSearchParams(queryString)), [queryString]);
@@ -77,28 +92,32 @@ export function RouteView() {
       })
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
-        const message =
-          err instanceof Error && !(err instanceof TypeError) && err.name !== "ZodError"
-            ? err.message
-            : "网络好像断了,或者服务返回了意外的内容。请重试。";
-        setState({ status: "error", message, canRetry: true });
+        const key = err instanceof ApiError ? `error.${err.code}` : "error.NETWORK";
+        const known = translateMaybe("en", key) !== null;
+        setState({ status: "error", messageKey: (known ? key : "error.NETWORK") as MessageKey });
       });
     return () => controller.abort();
   }, [req, queryString, attempt]);
 
   if (!req) {
     return (
-      <Message title="这个链接不完整">
-        <p>路线参数缺失或不合法,可能是链接被截断了。</p>
+      <Message title={t("route.badLinkTitle")}>
+        <p>{t("route.badLinkBody")}</p>
         <Button asChild>
-          <Link href="/">重新规划一条</Link>
+          <Link href="/">{t("route.planNew")}</Link>
         </Button>
       </Message>
     );
   }
 
   const city = findCity(req.city);
-  const heading = `${city?.name ?? req.city} · ${THEME_CONFIG[req.theme].label}漫步`;
+  const cityName = city ? t(`city.${city.id}` as "city.rome") : req.city;
+  const heading =
+    req.theme === "date"
+      ? t("route.headingDate", { city: cityName })
+      : t("route.heading", { city: cityName, theme: t(`theme.${req.theme}`) });
+  const shell = { heading, backLabel: t("route.back") };
+  const plainMap = <LazyMap center={req.start} start={req.start} startLabel={t("map.start")} />;
 
   function navigate(next: RouteRequest) {
     resolvedQuery.current = null;
@@ -107,11 +126,11 @@ export function RouteView() {
 
   if (state.status === "loading") {
     return (
-      <Shell heading={heading} map={<LazyMap center={req.start} start={req.start} />}>
+      <Shell {...shell} map={plainMap}>
         <div className="space-y-3" role="status" aria-live="polite">
           <p className="flex items-center gap-2 text-sm text-muted">
             <LoaderCircle className="size-4 animate-spin" aria-hidden />
-            正在挑选地点、规划步行路线…
+            {t("route.loading")}
           </p>
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="h-16 animate-pulse rounded-xl bg-line/60" />
@@ -123,19 +142,19 @@ export function RouteView() {
 
   if (state.status === "error") {
     return (
-      <Shell heading={heading} map={<LazyMap center={req.start} start={req.start} />}>
+      <Shell {...shell} map={plainMap}>
         <div className="space-y-4 rounded-xl border border-line bg-surface p-4" role="alert">
           <p className="flex items-start gap-2 font-medium">
             <TriangleAlert className="mt-0.5 size-5 shrink-0 text-accent" aria-hidden />
-            没能生成路线
+            {t("route.failed")}
           </p>
-          <p className="text-sm leading-relaxed text-muted">{state.message}</p>
+          <p className="text-sm leading-relaxed text-muted">{t(state.messageKey)}</p>
           <div className="flex gap-2">
             <Button onClick={() => { resolvedQuery.current = null; setAttempt((n) => n + 1); }}>
-              <RefreshCw /> 重试
+              <RefreshCw /> {t("route.retry")}
             </Button>
             <Button variant="outline" asChild>
-              <Link href="/">修改条件</Link>
+              <Link href="/">{t("route.edit")}</Link>
             </Button>
           </div>
         </div>
@@ -160,6 +179,15 @@ export function RouteView() {
     }
   }
 
+  // The event's venue becomes a stop where it adds the least walking.
+  function addEvent(event: EventItem) {
+    if (!req) return;
+    const ids = route.stops.map((s) => s.id);
+    ids.splice(cheapestInsertion(req.start, route.stops, event), 0, `event/${event.id}`);
+    navigate({ ...req, stopIds: ids });
+  }
+  const [attributionBefore, attributionAfter] = t("route.attribution").split("{osm}");
+
   function exportGeoJSON() {
     const blob = new Blob([JSON.stringify(toGeoJSON(route), null, 2)], { type: "application/geo+json" });
     const a = document.createElement("a");
@@ -171,11 +199,12 @@ export function RouteView() {
 
   return (
     <Shell
-      heading={heading}
+      {...shell}
       map={
         <LazyMap
           center={req.start}
           start={req.start}
+          startLabel={t("map.start")}
           stops={route.stops}
           geometry={route.geometry}
           activeStopId={activeStopId}
@@ -187,26 +216,28 @@ export function RouteView() {
       }
     >
       <dl className="grid grid-cols-4 divide-x divide-line rounded-xl border border-line bg-surface text-center" data-testid="summary">
-        <Stat label="距离" value={formatKm(route.summary.distanceMeters)} />
-        <Stat label="步行" value={`${route.summary.durationMinutes} 分`} />
-        <Stat label="停留" value={`${stayMinutes} 分`} />
-        <Stat label="站点" value={`${route.summary.stopCount}`} />
+        <Stat label={t("route.distance")} value={formatKm(route.summary.distanceMeters, locale)} />
+        <Stat label={t("route.walk")} value={t("route.min", { n: route.summary.durationMinutes })} />
+        <Stat label={t("route.stay")} value={t("route.min", { n: stayMinutes })} />
+        <Stat label={t("route.stops")} value={`${route.summary.stopCount}`} />
       </dl>
 
       {route.warnings.length > 0 && (
         <ul className="space-y-1 rounded-xl bg-warn-bg p-3 text-sm leading-relaxed text-warn-ink" data-testid="warnings">
           {route.warnings.map((w) => (
-            <li key={w}>{w}</li>
+            <li key={w} data-code={w}>
+              {translateMaybe(locale, `warning.${w}`) ?? w}
+            </li>
           ))}
         </ul>
       )}
 
       <div className="grid grid-cols-3 gap-2">
         <Button variant="outline" onClick={() => navigate({ ...req, stopIds: undefined, seed: (req.seed ?? 0) + 1 })} disabled={updating}>
-          <RefreshCw className={cn(updating && "animate-spin")} /> 换一条
+          <RefreshCw className={cn(updating && "animate-spin")} /> {t("route.regenerate")}
         </Button>
         <Button variant="outline" onClick={share}>
-          {copied ? <Check /> : <Share2 />} {copied ? "已复制" : "分享"}
+          {copied ? <Check /> : <Share2 />} {copied ? t("route.copied") : t("route.share")}
         </Button>
         <Button variant="outline" onClick={exportGeoJSON}>
           <Download /> GeoJSON
@@ -230,22 +261,30 @@ export function RouteView() {
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium" data-testid="stop-name">{stop.name}</p>
               <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
-                <Badge>{CATEGORY_LABEL[stop.category]}</Badge>
-                <span>建议停留 {stop.suggestedStayMinutes} 分钟</span>
+                <Badge>{t(`category.${stop.category}`)}</Badge>
+                {stop.event ? (
+                  <span>
+                    {formatEventDate(stop.event.startsAt, locale)}
+                    {stop.event.venue && ` · ${stop.event.venue}`}
+                  </span>
+                ) : (
+                  <span>{t("route.stayHint", { n: stop.suggestedStayMinutes })}</span>
+                )}
                 <a
-                  href={stop.osmUrl}
+                  href={stop.event?.url ?? stop.osmUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-0.5 underline underline-offset-2 hover:text-ink"
                 >
-                  OSM <ExternalLink className="size-3" aria-hidden />
+                  {stop.event ? t("route.tickets") : "OSM"} <ExternalLink className="size-3" aria-hidden />
                 </a>
               </p>
             </div>
             <Button
               variant="ghost"
               size="icon"
-              aria-label={`删除站点 ${stop.name}`}
+              aria-label={t("route.delete", { name: stop.name })}
+              data-testid="delete-stop"
               disabled={updating || route.stops.length <= MIN_STOPS}
               onClick={() =>
                 navigate({ ...req, stopIds: route.stops.filter((s) => s.id !== stop.id).map((s) => s.id) })
@@ -257,12 +296,26 @@ export function RouteView() {
         ))}
       </ol>
 
-      <p className="text-xs leading-relaxed text-muted">
-        地图与地点数据 ©{" "}
+      {eventsOpen ? (
+        <EventsPanel
+          start={req.start}
+          addedIds={route.stops.map((s) => s.id)}
+          canAdd={!updating && route.stops.length < MAX_STOPS}
+          onAdd={addEvent}
+        />
+      ) : (
+        // Opt-in, so that viewing a route never spends the event API quota.
+        <Button variant="outline" className="w-full" onClick={() => setEventsOpen(true)} data-testid="events-open">
+          <CalendarDays /> {t("events.open")}
+        </Button>
+      )}
+
+      <p className="text-xs leading-relaxed text-muted" data-testid="attribution">
+        {attributionBefore}
         <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" className="underline underline-offset-2">
-          OpenStreetMap 贡献者
+          {t("route.osmContributors")}
         </a>
-        ,以 ODbL 授权。步行路径由 OSRM 计算。步行时间按 4.5 km/h 估算。
+        {attributionAfter}
       </p>
     </Shell>
   );
@@ -277,21 +330,32 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Shell({ heading, map, children }: { heading: string; map: React.ReactNode; children: React.ReactNode }) {
+function Shell({
+  heading,
+  backLabel,
+  map,
+  children,
+}: {
+  heading: string;
+  backLabel: string;
+  map: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex flex-col lg:h-dvh lg:flex-row-reverse">
       <div className="h-[42dvh] min-h-64 shrink-0 border-b border-line lg:h-auto lg:flex-1 lg:border-b-0 lg:border-l" data-testid="map">
         {map}
       </div>
       <section className="w-full space-y-4 p-4 lg:w-[420px] lg:shrink-0 lg:overflow-y-auto lg:p-6">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center justify-between">
           <Button variant="ghost" size="icon" asChild className="-ml-2">
-            <Link href="/" aria-label="返回首页">
+            <Link href="/" aria-label={backLabel}>
               <ArrowLeft />
             </Link>
           </Button>
-          <h1 className="font-display text-2xl font-semibold tracking-tight">{heading}</h1>
+          <LanguageSwitcher />
         </div>
+        <h1 className="font-display text-2xl font-semibold leading-tight tracking-tight text-balance">{heading}</h1>
         {children}
       </section>
     </div>
