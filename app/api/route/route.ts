@@ -2,25 +2,24 @@ import { NextResponse } from "next/server";
 import { createFixtureProvider } from "@/lib/providers/fixtures";
 import { createOsrmProvider } from "@/lib/providers/osrm";
 import { createOverpassProvider } from "@/lib/providers/overpass";
-import { createTicketmasterProvider } from "@/lib/providers/ticketmaster";
+import { createEventProvider } from "@/lib/providers/events";
 import { generateRoute, RouteError } from "@/lib/route/service";
 import { routeRequestSchema, type ApiErrorCode } from "@/lib/schemas";
 
 export const runtime = "nodejs";
-// Worst case: two Overpass mirrors (8 s each) + two routing attempts.
+// two Overpass mirrors at 8 s each plus routing
 export const maxDuration = 30;
 
-// CITYWALK_OFFLINE=1 serves the bundled fixtures and skips routing entirely:
-// used by the E2E test and for demos without network access.
+// CITYWALK_OFFLINE=1: fixtures only, no routing (e2e, demos without network)
 const offline = process.env.CITYWALK_OFFLINE === "1";
 const fixtures = createFixtureProvider();
 const deps = offline
-  ? { pois: fixtures, routing: null }
+  ? { pois: fixtures, routing: null, events: createEventProvider() }
   : {
       pois: createOverpassProvider(),
       fallbackPois: fixtures,
       routing: createOsrmProvider(),
-      events: createTicketmasterProvider(),
+      events: createEventProvider(),
     };
 
 function fail(status: number, code: ApiErrorCode, message: string) {

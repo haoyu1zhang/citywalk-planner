@@ -1,7 +1,6 @@
 import type { FeatureCollection } from "geojson";
 import type { RouteResponse } from "@/types";
 
-/** The route as a FeatureCollection: one LineString plus one Point per stop. */
 export function toGeoJSON(route: RouteResponse): FeatureCollection {
   return {
     type: "FeatureCollection",

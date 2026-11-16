@@ -3,13 +3,11 @@ import { fetchJson, HttpError } from "@/lib/http";
 import type { EventItem } from "@/types";
 import type { EventProvider, EventQuery } from "./types";
 
-// Ticketmaster Discovery API v2. Free key (5000 calls/day, 5 req/s) from
-// https://developer.ticketmaster.com — set TICKETMASTER_API_KEY on the server.
-// Everything it lists happens at a physical venue, which is what we want.
+// Ticketmaster Discovery API v2. Needs TICKETMASTER_API_KEY (free tier: 5000 calls/day).
 
 const BASE = "https://app.ticketmaster.com/discovery/v2";
 
-// Only the fields we read. Venue coordinates arrive as strings.
+// venue coordinates come as strings
 const rawEventSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -49,7 +47,6 @@ const CATEGORY_TO_SEGMENT: Partial<Record<EventItem["category"], string>> = {
   family: "Family",
 };
 
-/** Raw Discovery response → validated events. Events without a mappable venue are dropped. */
 export function parseTicketmaster(raw: unknown): EventItem[] {
   const parsed = responseSchema.safeParse(raw);
   if (!parsed.success) throw new HttpError("unexpected Ticketmaster response shape", "parse");
@@ -62,7 +59,7 @@ export function parseTicketmaster(raw: unknown): EventItem[] {
     const { localDate, localTime } = ev.data.dates.start;
     if (!venue.location || !localDate || !/^[A-Za-z0-9_-]{1,40}$/.test(ev.data.id)) continue;
     if (venue.location.latitude === 0 && venue.location.longitude === 0) continue;
-    // The same show is often listed once per ticket type.
+    // same show, one listing per ticket type
     const key = `${ev.data.name}|${localDate}|${localTime ?? ""}|${venue.name ?? ""}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -78,6 +75,7 @@ export function parseTicketmaster(raw: unknown): EventItem[] {
       lat: venue.location.latitude,
       lng: venue.location.longitude,
       ...(price?.min !== undefined ? { priceFrom: price.min, currency: price.currency } : {}),
+      source: "ticketmaster",
     });
   }
   return events;
@@ -122,8 +120,7 @@ export function buildSearchUrl(query: EventQuery, apiKey: string): string {
     geoPoint: geohash(query.center.lat, query.center.lng),
     radius: String(Math.round(query.radiusKm)),
     unit: "km",
-    // Day boundaries in UTC: off by an hour or two for Italy, which is fine
-    // for "what's on this week".
+    // UTC day boundaries, close enough for Italy
     startDateTime: `${query.from}T00:00:00Z`,
     endDateTime: `${query.to}T23:59:59Z`,
     sort: "date,asc",
@@ -136,7 +133,6 @@ export function buildSearchUrl(query: EventQuery, apiKey: string): string {
   return `${BASE}/events.json?${params}`;
 }
 
-/** Returns null when no key is configured: the feature is simply off. */
 export function createTicketmasterProvider(
   apiKey: string | undefined = process.env.TICKETMASTER_API_KEY,
 ): EventProvider | null {
@@ -148,7 +144,7 @@ export function createTicketmasterProvider(
       const raw = await fetchJson(url, {
         timeoutMs: 6000,
         retries: 1,
-        // The key is part of the URL; keep it out of the cache key.
+        // keep the api key out of the cache key
         cacheKey: `tm:${url.replace(apiKey, "")}`,
         cacheTtlMs: 15 * 60_000,
       });

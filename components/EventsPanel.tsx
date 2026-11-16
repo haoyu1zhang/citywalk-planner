@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { haversine } from "@/lib/geo";
-import { dateRange, EVENT_RANGES, formatEventDate, type EventRange } from "@/lib/events";
+import { dateRange, EVENT_RANGES, formatEventWhen, type EventRange } from "@/lib/events";
 import { LOCALE_TAG } from "@/lib/i18n";
 import { eventsResponseSchema, type EventItem } from "@/lib/schemas";
 import { EVENT_CATEGORIES } from "@/lib/themes";
@@ -21,8 +21,9 @@ type CategoryFilter = "all" | EventItem["category"];
 type State =
   | { status: "loading" }
   | { status: "ready"; events: EventItem[] }
-  | { status: "unconfigured" }
   | { status: "error" };
+
+const SOURCE_NAME: Record<EventItem["source"], string> = { ezine: "E-zine", ticketmaster: "Ticketmaster" };
 
 const chip = (selected: boolean) =>
   cn(
@@ -32,7 +33,6 @@ const chip = (selected: boolean) =>
 
 interface Props {
   start: LatLng;
-  /** Ids of event stops already on the route ("event/<id>"). */
   addedIds: string[];
   canAdd: boolean;
   onAdd: (event: EventItem) => void;
@@ -57,7 +57,7 @@ export function EventsPanel({ start, addedIds, canAdd, onAdd }: Props) {
       .then(async (res) => {
         if (!res.ok) throw new Error("events failed");
         const data = eventsResponseSchema.parse(await res.json());
-        setState(data.configured ? { status: "ready", events: data.events } : { status: "unconfigured" });
+        setState({ status: "ready", events: data.events });
       })
       .catch(() => {
         if (!controller.signal.aborted) setState({ status: "error" });
@@ -72,12 +72,7 @@ export function EventsPanel({ start, addedIds, canAdd, onAdd }: Props) {
         {t("events.title")}
       </h2>
 
-      {state.status === "unconfigured" ? (
-        <p className="text-sm leading-relaxed text-muted" data-testid="events-unconfigured">
-          {t("events.notConfigured")}
-        </p>
-      ) : (
-        <>
+      <>
           <form
             className="flex gap-2"
             onSubmit={(e) => {
@@ -134,7 +129,7 @@ export function EventsPanel({ start, addedIds, canAdd, onAdd }: Props) {
                       <div className="min-w-0 flex-1">
                         <p className="line-clamp-2 text-sm font-medium">{event.name}</p>
                         <p className="mt-0.5 text-xs text-muted">
-                          {formatEventDate(event.startsAt, locale)}
+                          {formatEventWhen(event, locale)}
                           {event.venue && ` · ${event.venue}`}
                         </p>
                         <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
@@ -177,11 +172,14 @@ export function EventsPanel({ start, addedIds, canAdd, onAdd }: Props) {
                   );
                 })}
               </ul>
-              <p className="text-xs text-muted">{t("events.source")}</p>
+              <p className="text-xs text-muted">
+                {t("events.sources", {
+                  names: [...new Set(state.events.map((e) => SOURCE_NAME[e.source]))].join(", "),
+                })}
+              </p>
             </>
           )}
-        </>
-      )}
+      </>
     </section>
   );
 }

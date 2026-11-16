@@ -27,15 +27,12 @@ export class RouteError extends Error {
 
 export interface RouteDeps {
   pois: PoiProvider;
-  /** Used when `pois` fails. Optional so tests can exercise the hard failure. */
   fallbackPois?: PoiProvider;
   /** null = offline mode: skip routing and draw straight lines. */
   routing: RoutingProvider | null;
-  /** Resolves events pinned in a shared link. null/absent = no event source. */
   events?: EventProvider | null;
 }
 
-/** An event the user added, shaped like a place so it can sit in the same list. */
 type EventStop = Omit<Poi, "category"> & { category: "event"; event: EventItem };
 type Stop = Poi | EventStop;
 
@@ -45,7 +42,7 @@ function eventStop(event: EventItem): EventStop {
 
 function toStop(poi: Stop): RouteStop {
   if (poi.category === "event") {
-    const { startsAt, url, venue, category } = poi.event;
+    const { startsAt, endsAt, url, venue, category } = poi.event;
     return {
       id: poi.id,
       name: poi.name,
@@ -54,7 +51,7 @@ function toStop(poi: Stop): RouteStop {
       lng: poi.lng,
       suggestedStayMinutes: EVENT_STAY_MINUTES,
       osmUrl: `https://www.openstreetmap.org/?mlat=${poi.lat}&mlon=${poi.lng}#map=18/${poi.lat}/${poi.lng}`,
-      event: { startsAt, url, venue, category },
+      event: { startsAt, endsAt, url, venue, category },
     };
   }
   return {
@@ -75,7 +72,6 @@ function straightPath(points: LatLng[]): RoutedPath {
   };
 }
 
-/** Tries the live provider, then the fixture. Reports which one answered. */
 async function withFallback<T>(
   deps: RouteDeps,
   call: (p: PoiProvider) => Promise<T[]>,
@@ -94,8 +90,7 @@ export async function generateRoute(req: RouteRequest, deps: RouteDeps): Promise
   let stops: Stop[] | null = null;
   const pinned = Boolean(req.stopIds);
 
-  // 1. A shared link pins its stops: load exactly those, in the given order.
-  //    Places come from the POI provider, events from the event provider.
+  // shared link: load exactly these stops, in this order
   if (req.stopIds) {
     const ids = req.stopIds;
     const placeIds = ids.filter((id) => !id.startsWith("event/"));
@@ -108,7 +103,7 @@ export async function generateRoute(req: RouteRequest, deps: RouteDeps): Promise
     if (eventIds.length && deps.events) {
       events = await deps.events.byIds(eventIds).catch(() => []);
     }
-    // An event that ended or was cancelled just drops out of the route.
+    // ended or cancelled events just drop out
     if (events.length < eventIds.length) warnings.push("EVENT_UNAVAILABLE");
 
     if (places.items.length === placeIds.length) {
@@ -123,7 +118,7 @@ export async function generateRoute(req: RouteRequest, deps: RouteDeps): Promise
     }
   }
 
-  // 2. Otherwise plan from scratch.
+  // otherwise plan from scratch
   if (!stops) {
     const query = {
       center: req.start,
@@ -152,11 +147,9 @@ export async function generateRoute(req: RouteRequest, deps: RouteDeps): Promise
     throw new RouteError("NO_RESULTS", "Not enough places were found near this start.");
   }
 
-  // 3. Real walking path. One routing call per attempt, at most three attempts:
-  //    if the streets make the walk exceed the hard detour limit, drop the
-  //    costliest stop and try again. Stops the user pinned are never dropped
-  //    behind their back (they get a warning instead), and a date keeps its
-  //    arc: only middle stops may go.
+  // Real walking path. If it blows the detour limit, drop the costliest stop and
+  // retry (max 3 routing calls). Pinned stops are never dropped, and a date route
+  // only loses middle stops.
   const mayTrim = !pinned;
   const trim = (list: Stop[]): Stop[] =>
     req.theme === "date" && list.length > 2

@@ -22,7 +22,6 @@ const broken: PoiProvider = {
   search: async () => Promise.reject(new Error("timeout")),
   byIds: async () => Promise.reject(new Error("timeout")),
 };
-/** Routing stub whose distance depends only on the number of waypoints. */
 const routing = (distanceFor: (points: number) => number): RoutingProvider => ({
   name: "stub",
   walk: vi.fn(async (points: LatLng[]) => ({
@@ -76,7 +75,7 @@ describe("generateRoute", () => {
   });
 
   it("drops stops when the routed distance breaks the 1.5× limit", async () => {
-    // Each waypoint "costs" 1.3 km of street: 6 points → 7.8 km > 6.75 km limit.
+    // 6 points * 1.3 km = 7.8 km, over the 6.75 km limit
     const stub = routing((n) => n * 1300);
     const res = await generateRoute(REQ, { pois: provider("overpass", POIS), routing: stub });
     expect(res.summary.distanceMeters).toBeLessThanOrEqual(targetMeters(60) * 1.5);
@@ -114,6 +113,7 @@ describe("generateRoute", () => {
       startsAt: "2026-11-21T21:00",
       category: "music",
       venue: "Auditorium",
+      source: "ticketmaster",
       ...at(300, 300),
     };
     const events = (list: EventItem[]): EventProvider => ({

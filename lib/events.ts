@@ -8,7 +8,6 @@ export type EventRange = (typeof EVENT_RANGES)[number];
 const isoDate = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-/** Inclusive local date range for a filter chip. */
 export function dateRange(range: EventRange, today = new Date()): { from: string; to: string } {
   const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const plus = (days: number) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + days);
@@ -21,7 +20,6 @@ export function dateRange(range: EventRange, today = new Date()): { from: string
   return { from: isoDate(day === 6 ? start : plus(6 - day)), to: isoDate(plus(7 - day)) };
 }
 
-/** "Sat 21 Nov, 20:30" in the visitor's language. `startsAt` is venue-local. */
 export function formatEventDate(startsAt: string, locale: Locale): string {
   const hasTime = startsAt.includes("T");
   const date = new Date(hasTime ? startsAt : `${startsAt}T00:00`);
@@ -33,7 +31,13 @@ export function formatEventDate(startsAt: string, locale: Locale): string {
   }).format(date);
 }
 
-/** Index at which inserting `point` lengthens the walk the least. */
+/** Exhibitions show their run ("19 Nov – 19 Dec"), one-off events their date and time. */
+export function formatEventWhen(event: { startsAt: string; endsAt?: string }, locale: Locale): string {
+  if (!event.endsAt) return formatEventDate(event.startsAt, locale);
+  const day = new Intl.DateTimeFormat(LOCALE_TAG[locale], { day: "numeric", month: "short" });
+  return `${day.format(new Date(`${event.startsAt.slice(0, 10)}T00:00`))} – ${day.format(new Date(`${event.endsAt}T00:00`))}`;
+}
+
 export function cheapestInsertion(start: LatLng, stops: LatLng[], point: LatLng): number {
   let best = stops.length;
   let bestAdded = Infinity;
