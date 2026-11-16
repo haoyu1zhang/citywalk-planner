@@ -10,10 +10,10 @@ export default defineConfig({
     baseURL: `http://localhost:${PORT}`,
     ...devices["Pixel 7"],
     locale: "zh-CN",
-    // Set PW_CHROME_PATH to reuse a system Chrome instead of `playwright install`.
+    // PW_CHROME_PATH=/path/to/chrome to skip `playwright install`
     launchOptions: process.env.PW_CHROME_PATH ? { executablePath: process.env.PW_CHROME_PATH } : {},
   },
-  // Offline mode: bundled fixtures, no calls to public APIs, fully deterministic.
+  // offline: bundled fixtures, no public APIs
   webServer: {
     command: `npm run build && npm run start -- -p ${PORT}`,
     url: `http://localhost:${PORT}`,

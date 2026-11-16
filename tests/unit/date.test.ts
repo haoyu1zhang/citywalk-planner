@@ -19,8 +19,7 @@ describe("date mode", () => {
   });
 
   it("keeps the arc order instead of the shortest path", () => {
-    // The restaurant is nearest to the start, the gelato furthest: a shortest
-    // path would visit them the other way round.
+    // shortest path would go dinner first, gelato last
     const gelato = poi(600, 0, "ice_cream");
     const park = poi(400, 300, "park");
     const view = poi(200, 500, "viewpoint");
@@ -64,7 +63,6 @@ describe("date mode", () => {
     expect(new Set([ids(0), ids(1), ids(2), ids(3)]).size).toBeGreaterThan(1);
   });
 
-  // Offline acceptance: every preset city gets a proper date at every duration.
   it.each(CITIES)("$id: opens sweet, ends at a table, and fits the time", async (city) => {
     const fixtures = createFixtureProvider();
     for (const durationMinutes of DURATIONS) {

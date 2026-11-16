@@ -5,7 +5,6 @@ import { CATEGORY_FILTERS, categoryFromTags } from "@/lib/themes";
 import type { Poi } from "@/types";
 import type { PoiProvider, PoiQuery } from "./types";
 
-// Only the fields we use; anything else in the response is ignored.
 const elementSchema = z.object({
   type: z.enum(["node", "way", "relation"]),
   id: z.number(),
@@ -16,7 +15,6 @@ const elementSchema = z.object({
 });
 const responseSchema = z.object({ elements: z.array(z.unknown()) });
 
-/** Raw Overpass JSON → validated Pois. Malformed elements are dropped, not fatal. */
 export function parseOverpass(raw: unknown): Poi[] {
   const parsed = responseSchema.safeParse(raw);
   if (!parsed.success) throw new HttpError("unexpected Overpass response shape", "parse");
@@ -60,8 +58,7 @@ export function createOverpassProvider(
   endpoints: string[] = process.env.OVERPASS_URLS?.split(",").map((s) => s.trim()).filter(Boolean) ??
     DEFAULT_ENDPOINTS,
 ): PoiProvider {
-  // One attempt per mirror is the whole retry budget: public instances ask
-  // clients not to hammer them, and the caller has a fixture to fall back on.
+  // one attempt per mirror, then give up: the caller falls back to fixtures
   async function run(query: string): Promise<Poi[]> {
     let lastError: unknown;
     for (const endpoint of endpoints) {
@@ -85,7 +82,7 @@ export function createOverpassProvider(
   return {
     name: "overpass",
     search(query) {
-      // Snap the centre to ~100 m so nearby starts share a cache entry.
+      // snap to ~100 m so nearby starts share a cache entry
       const center = { lat: roundCoord(query.center.lat, 3), lng: roundCoord(query.center.lng, 3) };
       return run(buildSearchQuery({ ...query, center }));
     },

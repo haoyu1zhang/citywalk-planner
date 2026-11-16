@@ -17,8 +17,7 @@ afterEach(() => {
 });
 
 describe("Overpass", () => {
-  // The first two elements are a real response; the last three were added by
-  // hand to cover a missing name, missing coordinates and a malformed element.
+  // first two elements are a real response, the other three are broken on purpose
   it("parses a real response and skips unusable elements", () => {
     expect(parseOverpass(overpassSample)).toEqual([
       { id: "node/32631124", name: "Giolitti", category: "cafe", lat: 41.9010573, lng: 12.4772481, tagCount: 18 },
@@ -115,8 +114,6 @@ describe("fixtures", () => {
     expect(fixtureCityFor({ lat: 48.8566, lng: 2.3522 })).toBeNull();
   });
 
-  // Acceptance criterion: every preset city yields ≥ 4 stops for a 60-minute
-  // coffee walk even with all external services down.
   it.each(CITIES)("$id: 60-minute coffee walk has at least 4 stops offline", async (city) => {
     const pois = await fixtures.search({ center: city.center, radiusMeters: 2025, categories: themeCategories("coffee") });
     const plan = planRoute(pois, { start: city.center, durationMinutes: 60, theme: "coffee" });

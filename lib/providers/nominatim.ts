@@ -8,10 +8,7 @@ const responseSchema = z.array(
 
 const BASE = process.env.NOMINATIM_URL ?? "https://nominatim.openstreetmap.org";
 
-/**
- * Nominatim's usage policy: identify yourself, cache, max 1 req/s, and no
- * autocomplete. The UI only searches on an explicit submit.
- */
+// Nominatim policy: identify yourself, cache, 1 req/s, no autocomplete
 export async function geocode(q: string): Promise<GeocodeResult[]> {
   const query = q.trim().toLowerCase();
   const url = `${BASE}/search?format=jsonv2&limit=5&accept-language=zh,it,en&q=${encodeURIComponent(query)}`;

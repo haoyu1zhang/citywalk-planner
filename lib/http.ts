@@ -1,10 +1,7 @@
-// Shared fetch helper for the public OSM services: every call gets a
-// User-Agent, a hard timeout, a bounded number of retries and an in-memory
-// cache. On serverless the cache only lives as long as the instance, which is
-// fine: it is a politeness measure, not a correctness requirement.
+// fetch wrapper for the public OSM services: User-Agent, timeout, retries, small in-memory cache
 
 export const USER_AGENT =
-  process.env.APP_USER_AGENT ?? "citywalk-planner/0.1 (+https://github.com/; portfolio demo)";
+  process.env.APP_USER_AGENT ?? "citywalk-planner/0.1 (+https://github.com/haoyu1zhang/citywalk-planner)";
 
 interface CacheEntry {
   expires: number;
@@ -31,7 +28,6 @@ export interface FetchJsonOptions {
   timeoutMs?: number;
   /** Extra attempts after the first one. Only timeouts, 429 and 5xx retry. */
   retries?: number;
-  /** Cache key; omit to skip caching. */
   cacheKey?: string;
   cacheTtlMs?: number;
 }
@@ -87,7 +83,6 @@ export async function fetchJson(url: string, opts: FetchJsonOptions = {}): Promi
   throw lastError;
 }
 
-/** Test hook. */
 export function clearHttpCache(): void {
   cache.clear();
 }

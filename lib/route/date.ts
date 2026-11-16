@@ -3,20 +3,16 @@ import { DISTANCE_TOLERANCE, STOP_COUNT, STREET_FACTOR, targetMeters } from "@/l
 import type { Category, Duration, LatLng, Poi, RoutePlan, WarningCode } from "@/types";
 import { scorePoi } from "./score";
 
-// Date mode answers "where should we go?" with a small story instead of a
-// shortest path: start with something sweet, wander, catch a view, and end
-// somewhere you can sit down together. The order of the stops is the point,
-// so unlike the other themes the result is NOT re-ordered by 2-opt.
+// Date mode: a fixed arc (something sweet, a stroll, a view, dinner or a drink)
+// instead of the shortest path, so the result is not re-ordered by 2-opt.
 
 const OPENER: Category[] = ["ice_cream", "cafe"];
 const STROLL: Category[] = ["park", "viewpoint", "art_gallery", "bookshop", "attraction"];
 const FINALE: Category[] = ["restaurant", "bar"];
-/** The stop before the finale should be the scenic one if there is a view within reach. */
 const VIEW_BONUS = 1.5;
 
 type Slot = { allowed: Category[]; preferView?: boolean };
 
-/** One slot per stop, in walking order. */
 export function dateSlots(count: number): Slot[] {
   if (count <= 2) return [{ allowed: OPENER }, { allowed: FINALE }];
   const middle = Array.from({ length: count - 2 }, (_, i): Slot => ({
@@ -51,14 +47,13 @@ export function planDateRoute(
           (counts.get(c.category) ?? 0) < MAX_PER_CATEGORY &&
           ![start, ...stops].some((p) => haversine(p, c) < spacing),
       );
-    // Save the last viewpoint for the slot that wants it.
+    // keep the last viewpoint for the slot before the finale
     const viewsLeft = candidates.filter((c) => c.category === "viewpoint" && !stops.includes(c)).length;
     const allowed =
       slot.allowed === STROLL && !slot.preferView && viewsLeft <= 1
         ? STROLL.filter((c) => c !== "viewpoint")
         : slot.allowed;
-    // Prefer a well-spaced match; then any match (a restaurant next door to
-    // the gelato place still beats no dinner); then a stroll stop.
+    // well-spaced match first, then any match, then fall back to a stroll stop
     let pool = usable(allowed, MIN_SPACING_M);
     if (pool.length === 0) pool = usable(allowed, 0);
     if (pool.length === 0 && slot.allowed !== STROLL) pool = usable(STROLL, MIN_SPACING_M);
@@ -84,7 +79,7 @@ export function planDateRoute(
     counts.set(best.category, (counts.get(best.category) ?? 0) + 1);
   }
 
-  // Too long: remove middle stops, never the opener or the finale.
+  // too long: drop middle stops only
   const estimate = (list: Poi[]) => pathLength([start, ...list]) * STREET_FACTOR;
   while (stops.length > 3 && estimate(stops) > target * (1 + DISTANCE_TOLERANCE)) {
     let dropIndex = 1;

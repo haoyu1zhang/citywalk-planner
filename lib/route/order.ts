@@ -1,15 +1,11 @@
 import { haversine } from "@/lib/geo";
 import type { LatLng } from "@/types";
 
-/**
- * Two cafés in a row make a dull walk. Instead of fixing that after the fact,
- * same-category neighbours simply cost this many extra "metres", so both the
- * construction and the 2-opt pass trade distance against variety.
- */
+// Same-category neighbours cost this many extra metres, so both nearest-neighbour
+// and 2-opt avoid cafe, cafe, cafe when the detour is small.
 export const SAME_CATEGORY_PENALTY_M = 150;
 
 type Node = LatLng & { category?: string };
-/** Anything with a position and a category can be ordered: places and events alike. */
 type Stop = LatLng & { category: string };
 
 export function edgeCost(a: Node, b: Node): number {
@@ -27,7 +23,6 @@ export function pathCost(start: LatLng, stops: Stop[]): number {
   return cost;
 }
 
-/** Greedy construction: always walk to the cheapest unvisited stop. */
 export function nearestNeighbor<T extends Stop>(start: LatLng, stops: T[]): T[] {
   const remaining = [...stops];
   const order: T[] = [];
@@ -43,14 +38,9 @@ export function nearestNeighbor<T extends Stop>(start: LatLng, stops: T[]): T[] 
   return order;
 }
 
-/**
- * 2-opt for an open path with a fixed start (the walk does not return home).
- *
- * Reversing order[i..j] replaces edges (i-1,i) and (j,j+1) with (i-1,j) and
- * (i,j+1); edges inside the segment keep their cost because edgeCost is
- * symmetric. When j is the last stop there is no outgoing edge to replace.
- * Repeats until no reversal improves the cost.
- */
+// 2-opt on an open path with a fixed start. Reversing order[i..j] only changes the
+// two boundary edges (edgeCost is symmetric); if j is the last stop there is no
+// outgoing edge.
 export function twoOpt<T extends Stop>(start: LatLng, initial: T[]): T[] {
   const order = [...initial];
   const n = order.length;

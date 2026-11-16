@@ -21,7 +21,6 @@ type SearchState =
   | { status: "error" };
 
 type Mode = "walk" | "date";
-/** Where the walk starts: the city's default square, a searched landmark, or a map tap. */
 type StartSource = { kind: "default" } | { kind: "search"; label: string } | { kind: "map" };
 
 const WALK_THEMES = THEMES.filter((t) => t !== "date");
@@ -70,7 +69,7 @@ export function PlannerForm() {
     setSearch({ status: "idle" });
   }
 
-  // Runs only on an explicit submit: Nominatim's policy forbids autocomplete.
+  // submit only: Nominatim forbids autocomplete
   async function runSearch() {
     const q = query.trim();
     if (q.length < 2) return;
@@ -278,7 +277,7 @@ export function PlannerForm() {
             size="lg"
             variant="outline"
             className="min-w-0 shrink px-3"
-            // A random seed: every tap is a different, but shareable, evening.
+            // random seed, still shareable
             onClick={() => generate(1 + Math.floor(Math.random() * 9998))}
             disabled={submitting}
             data-testid="surprise"

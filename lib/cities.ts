@@ -2,12 +2,10 @@ import type { LatLng } from "@/types";
 
 export interface City {
   id: string;
-  /** Appended to geocoding queries to keep results in the right city. */
   query: string;
   center: LatLng;
 }
 
-// Default starts are well-known squares in the walkable historic centre.
 export const CITIES: City[] = [
   { id: "rome", query: "Roma", center: { lat: 41.8986, lng: 12.4769 } },
   { id: "florence", query: "Firenze", center: { lat: 43.7696, lng: 11.2558 } },
@@ -16,10 +14,6 @@ export const CITIES: City[] = [
   { id: "bologna", query: "Bologna", center: { lat: 44.4939, lng: 11.3428 } },
 ];
 
-// Display names and default-start labels live in lib/i18n/messages.ts
-// (city.<id>, cityStart.<id>).
-
-/** Accepts an id ("rome") or the native name ("Roma"). */
 export function findCity(input: string): City | undefined {
   const key = input.trim().toLowerCase();
   return CITIES.find(
