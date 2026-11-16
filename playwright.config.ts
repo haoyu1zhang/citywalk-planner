@@ -9,6 +9,7 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     ...devices["Pixel 7"],
+    locale: "zh-CN",
     // Set PW_CHROME_PATH to reuse a system Chrome instead of `playwright install`.
     launchOptions: process.env.PW_CHROME_PATH ? { executablePath: process.env.PW_CHROME_PATH } : {},
   },

@@ -44,5 +44,19 @@
   {"id":"relation/3376015","name":"Colonna di Traiano","category":"historic","lat":41.89581,"lng":12.48427,"tagCount":32},
   {"id":"node/1327232077","name":"San Pietro","category":"historic","lat":41.90185,"lng":12.45576,"tagCount":24},
   {"id":"way/52430153","name":"Basilica di Santa Maria del Popolo","category":"historic","lat":41.91146,"lng":12.47655,"tagCount":23},
-  {"id":"relation/1841087","name":"Basilica di Santa Francesca Romana","category":"historic","lat":41.89117,"lng":12.48879,"tagCount":23}
+  {"id":"relation/1841087","name":"Basilica di Santa Francesca Romana","category":"historic","lat":41.89117,"lng":12.48879,"tagCount":23},
+  {"id":"node/932316331","name":"Frigidarium","category":"ice_cream","lat":41.89825,"lng":12.47045,"tagCount":17},
+  {"id":"node/4230993216","name":"Gelateria dei Gracchi","category":"ice_cream","lat":41.90965,"lng":12.47611,"tagCount":17},
+  {"id":"node/9787381218","name":"Grezzo","category":"ice_cream","lat":41.89385,"lng":12.47732,"tagCount":17},
+  {"id":"node/11389815002","name":"The Gelatist","category":"ice_cream","lat":41.89692,"lng":12.48222,"tagCount":17},
+  {"id":"node/6805831485","name":"Zi Rosetta - Ristorante Osteria Romana","category":"restaurant","lat":41.89976,"lng":12.47651,"tagCount":37},
+  {"id":"node/4377755232","name":"Gandhi 2","category":"restaurant","lat":41.89888,"lng":12.49251,"tagCount":30},
+  {"id":"node/13516519453","name":"Kisaki Ramen & Sushi","category":"restaurant","lat":41.90587,"lng":12.47118,"tagCount":25},
+  {"id":"node/2138753806","name":"Cencio la Parolaccia","category":"restaurant","lat":41.89045,"lng":12.46889,"tagCount":22},
+  {"id":"node/5592820191","name":"Buddy Veggy Restaurant Cafè","category":"restaurant","lat":41.89665,"lng":12.47464,"tagCount":22},
+  {"id":"node/12276899352","name":"Igio","category":"restaurant","lat":41.88697,"lng":12.46912,"tagCount":19},
+  {"id":"node/257351831","name":"Bar San Calisto","category":"bar","lat":41.88905,"lng":12.47074,"tagCount":20},
+  {"id":"node/10692773572","name":"Mate Bar","category":"bar","lat":41.89164,"lng":12.4691,"tagCount":14},
+  {"id":"node/3997755066","name":"Shari Vari","category":"bar","lat":41.89714,"lng":12.47632,"tagCount":13},
+  {"id":"node/4192923989","name":"Anima Mundi","category":"bar","lat":41.88939,"lng":12.48353,"tagCount":12}
 ]

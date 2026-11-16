@@ -7,7 +7,8 @@ import {
   targetMeters,
   themeCategories,
 } from "@/lib/themes";
-import type { Category, Duration, LatLng, Poi, RoutePlan, Theme } from "@/types";
+import type { Category, Duration, LatLng, Poi, RoutePlan, Theme, WarningCode } from "@/types";
+import { planDateRoute } from "./date";
 import { filterCandidates } from "./candidates";
 import { orderStops } from "./order";
 import { scorePoi } from "./score";
@@ -80,7 +81,7 @@ export function selectStops(candidates: Poi[], opts: SelectOptions, already: Poi
 }
 
 /** Removes the stop whose absence shortens the path most. */
-export function dropCostliestStop(start: LatLng, stops: Poi[]): Poi[] {
+export function dropCostliestStop<T extends LatLng>(start: LatLng, stops: T[]): T[] {
   let bestIndex = 0;
   let bestLength = Infinity;
   for (let i = 0; i < stops.length; i++) {
@@ -109,9 +110,11 @@ export function planRoute(pois: Poi[], input: PlanInput): RoutePlan {
   const { start, durationMinutes, theme, seed = 0 } = input;
   const target = targetMeters(durationMinutes);
   const count = STOP_COUNT[durationMinutes];
-  const warnings: string[] = [];
+  const warnings: WarningCode[] = [];
 
   const candidates = filterCandidates(pois, start, searchRadius(durationMinutes), themeCategories(theme));
+  if (theme === "date") return planDateRoute(candidates, { start, durationMinutes, seed });
+
   const opts: SelectOptions = {
     theme,
     start,
@@ -140,10 +143,10 @@ export function planRoute(pois: Poi[], input: PlanInput): RoutePlan {
 
   const estimatedMeters = estimateMeters(start, stops);
   if (stops.length < count && stops.length >= MIN_STOPS && candidates.length < count) {
-    warnings.push(`附近符合主题的地点不多,只找到 ${stops.length} 站。`);
+    warnings.push("FEW_PLACES");
   }
   if (stops.length >= MIN_STOPS && estimatedMeters < target * (1 - DISTANCE_TOLERANCE)) {
-    warnings.push("附近地点比较集中,路线会比所选时长短一些。");
+    warnings.push("SHORTER_THAN_TARGET");
   }
   return { start, stops, targetMeters: target, estimatedMeters, warnings };
 }

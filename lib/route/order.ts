@@ -1,5 +1,5 @@
 import { haversine } from "@/lib/geo";
-import type { LatLng, Poi } from "@/types";
+import type { LatLng } from "@/types";
 
 /**
  * Two cafés in a row make a dull walk. Instead of fixing that after the fact,
@@ -9,13 +9,15 @@ import type { LatLng, Poi } from "@/types";
 export const SAME_CATEGORY_PENALTY_M = 150;
 
 type Node = LatLng & { category?: string };
+/** Anything with a position and a category can be ordered: places and events alike. */
+type Stop = LatLng & { category: string };
 
 export function edgeCost(a: Node, b: Node): number {
   const same = a.category !== undefined && a.category === b.category;
   return haversine(a, b) + (same ? SAME_CATEGORY_PENALTY_M : 0);
 }
 
-export function pathCost(start: LatLng, stops: Poi[]): number {
+export function pathCost(start: LatLng, stops: Stop[]): number {
   let cost = 0;
   let prev: Node = start;
   for (const stop of stops) {
@@ -26,9 +28,9 @@ export function pathCost(start: LatLng, stops: Poi[]): number {
 }
 
 /** Greedy construction: always walk to the cheapest unvisited stop. */
-export function nearestNeighbor(start: LatLng, stops: Poi[]): Poi[] {
+export function nearestNeighbor<T extends Stop>(start: LatLng, stops: T[]): T[] {
   const remaining = [...stops];
-  const order: Poi[] = [];
+  const order: T[] = [];
   let current: Node = start;
   while (remaining.length > 0) {
     let best = 0;
@@ -49,7 +51,7 @@ export function nearestNeighbor(start: LatLng, stops: Poi[]): Poi[] {
  * symmetric. When j is the last stop there is no outgoing edge to replace.
  * Repeats until no reversal improves the cost.
  */
-export function twoOpt(start: LatLng, initial: Poi[]): Poi[] {
+export function twoOpt<T extends Stop>(start: LatLng, initial: T[]): T[] {
   const order = [...initial];
   const n = order.length;
   const at = (i: number): Node => (i < 0 ? start : order[i]);
@@ -70,6 +72,6 @@ export function twoOpt(start: LatLng, initial: Poi[]): Poi[] {
   return order;
 }
 
-export function orderStops(start: LatLng, stops: Poi[]): Poi[] {
+export function orderStops<T extends Stop>(start: LatLng, stops: T[]): T[] {
   return twoOpt(start, nearestNeighbor(start, stops));
 }

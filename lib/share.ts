@@ -7,8 +7,10 @@ import type { RouteRequest } from "@/types";
 // `stops` pins the exact stops, so a shared link shows the same route even if
 // OSM data or the scoring changes later.
 
-const PREFIX: Record<string, string> = { node: "n", way: "w", relation: "r" };
-const TYPE: Record<string, string> = { n: "node", w: "way", r: "relation" };
+// Events added to the route travel in the same list with an "e" prefix.
+
+const PREFIX: Record<string, string> = { node: "n", way: "w", relation: "r", event: "e" };
+const TYPE: Record<string, string> = { n: "node", w: "way", r: "relation", e: "event" };
 
 export function encodeStopIds(ids: string[]): string {
   return ids.map((id) => `${PREFIX[id.split("/")[0]]}${id.split("/")[1]}`).join(",");

@@ -26,6 +26,14 @@ describe("share URL", () => {
     expect(qs).toBe("city=rome&lat=41.8986&lng=12.4769&d=60&theme=coffee");
   });
 
+  it("carries event stops alongside OSM ones", () => {
+    const ids = ["node/1", "event/Z698xZb_Z17a-9", "way/2"];
+    expect(encodeStopIds(ids)).toBe("n1,eZ698xZb_Z17a-9,w2");
+    expect(decodeStopIds("n1,eZ698xZb_Z17a-9,w2")).toEqual(ids);
+    const qs = encodeRouteParams({ ...req, theme: "date", stopIds: ids });
+    expect(decodeRouteParams(new URLSearchParams(qs))?.stopIds).toEqual(ids);
+  });
+
   it("encodes stop ids compactly", () => {
     expect(encodeStopIds(req.stopIds!)).toBe("n123,w456,r7");
     expect(decodeStopIds("n123,w456,r7")).toEqual(req.stopIds);

@@ -16,6 +16,7 @@ export interface MapViewProps {
   geometry?: RouteResponse["geometry"];
   activeStopId?: string | null;
   onStopSelect?: (id: string) => void;
+  startLabel?: string;
 }
 
 // divIcons avoid Leaflet's default image markers, whose asset paths break
@@ -59,6 +60,7 @@ export default function MapView({
   geometry,
   activeStopId,
   onStopSelect,
+  startLabel = "Start",
 }: MapViewProps) {
   const line = useMemo(
     () => geometry?.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]),
@@ -93,7 +95,7 @@ export default function MapView({
       {start && (
         <Marker position={[start.lat, start.lng]} icon={startIcon} keyboard={false}>
           <Tooltip direction="top" offset={[0, -8]}>
-            起点
+            {startLabel}
           </Tooltip>
         </Marker>
       )}

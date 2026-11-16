@@ -25,6 +25,7 @@ export function toGeoJSON(route: RouteResponse): FeatureCollection {
           category: stop.category,
           suggestedStayMinutes: stop.suggestedStayMinutes,
           osmUrl: stop.osmUrl,
+          ...(stop.event ? { eventUrl: stop.event.url, startsAt: stop.event.startsAt, venue: stop.event.venue } : {}),
         },
       })),
     ],
