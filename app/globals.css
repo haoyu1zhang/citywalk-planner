@@ -1,26 +1,73 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-paper: #faf6ef;
+  --color-surface: #ffffff;
+  --color-ink: #26211c;
+  --color-muted: #6f665c;
+  --color-line: #e4dccf;
+  --color-accent: #b8451f;
+  --color-accent-strong: #983615;
+  --color-accent-soft: #f6e4d9;
+  --color-route: #0f5e63;
+  --color-warn-bg: #fdf3d7;
+  --color-warn-ink: #6b4e00;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Songti SC", "Noto Serif CJK SC",
+    Georgia, serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Leaflet sits below sticky bars and dialogs. */
+.leaflet-container {
+  z-index: 0;
+  font-family: inherit;
+  background: #e9e4da;
+}
+
+/* Numbered stop markers (L.divIcon). */
+.cw-marker {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9999px;
+  background: var(--color-accent);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
+  font-variant-numeric: tabular-nums;
+}
+.cw-marker[data-active="true"] {
+  background: var(--color-ink);
+  transform: scale(1.15);
+}
+.cw-start {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--color-route);
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px var(--color-route), 0 1px 4px rgb(0 0 0 / 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
