@@ -4,7 +4,7 @@
 
 所有地点和路径都来自 OpenStreetMap 的真实数据(Overpass + OSRM),没有任何坐标是模型生成的。
 
-> 在线 demo:`https://<your-project>.vercel.app`(部署后替换)
+> 在线 demo:<https://citywalk-planner-pi.vercel.app>
 
 | 首页(375px) | 路线结果 | 桌面端 |
 | --- | --- | --- |
