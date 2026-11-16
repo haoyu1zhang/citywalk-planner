@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "fixtures": "tsx scripts/build-fixtures.ts"
+    "fixtures": "tsx scripts/build-fixtures.ts",
+    "events": "tsx scripts/update-events.ts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.5.0",

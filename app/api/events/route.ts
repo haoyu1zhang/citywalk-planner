@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createTicketmasterProvider } from "@/lib/providers/ticketmaster";
+import { createEventProvider } from "@/lib/providers/events";
 import { EVENT_CATEGORIES } from "@/lib/themes";
 
 export const runtime = "nodejs";
@@ -14,18 +14,15 @@ const querySchema = z.object({
   category: z.enum(EVENT_CATEGORIES).optional(),
 });
 
-/** Venues are often outside the walkable centre, so search wider than a walk. */
+// venues are often outside the walkable centre
 const RADIUS_KM = 8;
+const provider = createEventProvider();
 
 export async function GET(request: Request) {
-  const raw = Object.fromEntries(new URL(request.url).searchParams);
-  const parsed = querySchema.safeParse(raw);
+  const parsed = querySchema.safeParse(Object.fromEntries(new URL(request.url).searchParams));
   if (!parsed.success) {
     return NextResponse.json({ error: { code: "BAD_REQUEST", message: "Invalid query." } }, { status: 400 });
   }
-  const provider = process.env.CITYWALK_OFFLINE === "1" ? null : createTicketmasterProvider();
-  if (!provider) return NextResponse.json({ configured: false, events: [] });
-
   const { lat, lng, from, to, q, category } = parsed.data;
   try {
     const events = await provider.search({
@@ -37,12 +34,12 @@ export async function GET(request: Request) {
       category,
     });
     return NextResponse.json(
-      { configured: true, events },
+      { events },
       { headers: { "Cache-Control": "public, s-maxage=900, stale-while-revalidate=3600" } },
     );
   } catch {
     return NextResponse.json(
-      { error: { code: "EVENTS_UNAVAILABLE", message: "The event provider did not respond." } },
+      { error: { code: "EVENTS_UNAVAILABLE", message: "No event source responded." } },
       { status: 502 },
     );
   }
