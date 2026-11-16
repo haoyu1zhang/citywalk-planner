@@ -1,9 +1,6 @@
 // Regenerates lib/fixtures/*.json from live Overpass data.
 //   npm run fixtures            (all preset cities)
 //   npm run fixtures -- rome    (one city)
-//
-// For each category it keeps the best-tagged named places within RADIUS of the
-// city centre, so the offline demo has a small but representative sample.
 
 import { writeFileSync } from "node:fs";
 import path from "node:path";

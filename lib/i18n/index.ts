@@ -27,12 +27,10 @@ export function translate(
   );
 }
 
-/** For keys built at runtime (e.g. `warning.${code}`): null if there is no such message. */
 export function translateMaybe(locale: Locale, key: string): string | null {
   return key in MESSAGES[locale] ? translate(locale, key as MessageKey) : null;
 }
 
-/** Picks the best supported locale from an Accept-Language header. */
 export function negotiateLocale(acceptLanguage: string | null | undefined): Locale {
   if (!acceptLanguage) return DEFAULT_LOCALE;
   const ranked = acceptLanguage

@@ -14,7 +14,6 @@ export const CATEGORIES = [
   "restaurant",
   "bar",
 ] as const;
-/** A stop is either an OSM place or an event the user added to the route. */
 export const STOP_CATEGORIES = [...CATEGORIES, "event"] as const;
 export const EVENT_CATEGORIES = ["music", "arts", "sports", "film", "family", "other"] as const;
 
@@ -22,11 +21,8 @@ type Theme = (typeof THEMES)[number];
 type Category = (typeof CATEGORIES)[number];
 type Duration = (typeof DURATIONS)[number];
 
-// Labels live in lib/i18n/messages.ts (theme.<id>, themeHint.<id>).
 interface ThemeConfig {
-  /** What the walk is about. */
   primary: Category[];
-  /** Fillers that keep the walk varied; never more than one each. */
   secondary: Category[];
 }
 
@@ -55,8 +51,7 @@ export const THEME_CONFIG: Record<Theme, ThemeConfig> = {
     primary: ["museum", "art_gallery", "bookshop", "library", "cafe"],
     secondary: [],
   },
-  // Date mode does not rank by primary/secondary: lib/route/date.ts builds an
-  // "arc" (something sweet → a stroll → a view → dinner or a drink).
+  // date mode ignores primary/secondary, see lib/route/date.ts
   date: {
     primary: ["ice_cream", "cafe", "park", "viewpoint", "art_gallery", "bookshop", "attraction", "restaurant", "bar"],
     secondary: [],
@@ -79,7 +74,6 @@ export const STAY_MINUTES: Record<Category, number> = {
 };
 export const EVENT_STAY_MINUTES = 90;
 
-/** Overpass tag filters per category. Kept next to the reverse mapping below. */
 export const CATEGORY_FILTERS: Record<Category, string> = {
   cafe: '["amenity"="cafe"]',
   park: '["leisure"~"^(park|garden)$"]',
@@ -90,15 +84,13 @@ export const CATEGORY_FILTERS: Record<Category, string> = {
   attraction: '["tourism"="attraction"]',
   museum: '["tourism"="museum"]',
   ice_cream: '["amenity"="ice_cream"]',
-  // Restaurants and bars are everywhere; asking for a few extra tags keeps the
-  // result small and biased towards places someone bothered to document.
+  // there are far too many restaurants and bars; require a couple of extra tags
   restaurant: '["amenity"="restaurant"]["cuisine"]["website"]',
   bar: '["amenity"="bar"]["opening_hours"]',
   historic:
     '["historic"~"^(monument|memorial|castle|ruins|archaeological_site|church|fountain)$"]',
 };
 
-/** OSM tags → our category. Order matters: the most specific tag wins. */
 export function categoryFromTags(tags: Record<string, string>): Category | null {
   if (tags.amenity === "cafe") return "cafe";
   if (tags.amenity === "ice_cream") return "ice_cream";
@@ -121,11 +113,8 @@ export function themeCategories(theme: Theme): Category[] {
 }
 
 export const WALK_SPEED_KMH = 4.5;
-/** Target walking distance may float by this fraction. */
 export const DISTANCE_TOLERANCE = 0.2;
-/** Routed distance may never exceed target × this. */
 export const MAX_DETOUR_FACTOR = 1.5;
-/** Straight-line → street distance, used before real routing is known. */
 export const STREET_FACTOR = 1.3;
 
 export const STOP_COUNT: Record<Duration, number> = { 30: 3, 60: 5, 90: 6, 120: 7 };

@@ -11,7 +11,7 @@ describe("ordering", () => {
   });
 
   it("2-opt untangles a crossing path", () => {
-    // Zig-zag order across a square: the diagonals cross.
+    // crossing diagonals
     const a = poi(0, 500, "cafe");
     const b = poi(500, 0, "park");
     const c = poi(500, 500, "museum");
@@ -32,7 +32,7 @@ describe("ordering", () => {
   });
 
   it("separates same-category neighbours when the detour is small", () => {
-    // Three stops in a line 100 m apart; pure distance order would be cafe, cafe, park.
+    // by distance alone this would be cafe, cafe, park
     const cafe1 = poi(100, 0, "cafe");
     const cafe2 = poi(200, 0, "cafe");
     const park = poi(260, 0, "park");

@@ -3,11 +3,8 @@ import type { Category, LatLng, Poi } from "@/types";
 
 const normalise = (name: string) => name.toLowerCase().replace(/\s+/g, " ").trim();
 
-/**
- * Drops what can never be a stop: wrong category, no name, too far from the
- * start, and duplicates (same OSM id, or the same name mapped twice — OSM often
- * has a node and a building way for one place; the better-tagged one wins).
- */
+// Drops off-theme, unnamed, far-away and duplicate places. OSM often has a node
+// and a building way for the same shop; the better-tagged one wins.
 export function filterCandidates(
   pois: Poi[],
   start: LatLng,
@@ -26,6 +23,6 @@ export function filterCandidates(
     const existing = byName.get(key);
     if (!existing || poi.tagCount > existing.tagCount) byName.set(key, poi);
   }
-  // Stable order so the same input always yields the same route.
+  // stable order => same input, same route
   return [...byName.values()].sort((a, b) => a.id.localeCompare(b.id));
 }

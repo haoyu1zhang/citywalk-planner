@@ -10,7 +10,6 @@ export interface MapViewProps {
   center: LatLng;
   zoom?: number;
   start?: LatLng | null;
-  /** When set, clicking the map picks a start point. */
   onPick?: (point: LatLng) => void;
   stops?: RouteStop[];
   geometry?: RouteResponse["geometry"];
@@ -19,8 +18,7 @@ export interface MapViewProps {
   startLabel?: string;
 }
 
-// divIcons avoid Leaflet's default image markers, whose asset paths break
-// under bundlers.
+// divIcon instead of Leaflet's image markers (their asset paths break when bundled)
 const startIcon = L.divIcon({ className: "", html: '<div class="cw-start"></div>', iconSize: [18, 18], iconAnchor: [9, 9] });
 
 function numberedIcon(n: number, active: boolean) {
@@ -37,7 +35,6 @@ function ClickToPick({ onPick }: { onPick: (p: LatLng) => void }) {
   return null;
 }
 
-/** Keeps the viewport in sync: fit the route if there is one, else follow the centre. */
 function Viewport({ center, geometry }: Pick<MapViewProps, "center" | "geometry">) {
   const map = useMap();
   useEffect(() => {

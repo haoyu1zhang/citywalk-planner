@@ -17,12 +17,10 @@ import { scorePoi } from "./score";
 const MIN_SPACING_M = 60;
 export const MIN_STOPS = 2;
 
-/** Candidates are searched within this share of the target distance. */
 export function searchRadius(durationMinutes: number): number {
   return Math.max(600, targetMeters(durationMinutes) * 0.45);
 }
 
-/** At most 3 of a theme's single headline category, 2 of each otherwise, 1 per filler. */
 export function categoryCap(theme: Theme, category: Category): number {
   const cfg = THEME_CONFIG[theme];
   if (cfg.primary.includes(category)) return cfg.primary.length === 1 ? 3 : 2;
@@ -41,10 +39,7 @@ interface SelectOptions {
   seed: number;
 }
 
-/**
- * Greedy selection: walk from the start, each time taking the best-scoring
- * candidate that respects the per-category caps and the minimum spacing.
- */
+// greedy pick, respecting category caps and minimum spacing
 export function selectStops(candidates: Poi[], opts: SelectOptions, already: Poi[] = []): Poi[] {
   const picked = [...already];
   const counts = new Map<Category, number>();
@@ -57,7 +52,6 @@ export function selectStops(candidates: Poi[], opts: SelectOptions, already: Poi
     let bestScore = -Infinity;
     for (const cand of pool) {
       if ((counts.get(cand.category) ?? 0) >= categoryCap(opts.theme, cand.category)) continue;
-      // Too close to the start or to a picked stop: not worth a separate stop.
       if ([opts.start, ...picked].some((p) => haversine(p, cand) < MIN_SPACING_M)) continue;
       const score = scorePoi(cand, {
         theme: opts.theme,
@@ -80,7 +74,6 @@ export function selectStops(candidates: Poi[], opts: SelectOptions, already: Poi
   return picked;
 }
 
-/** Removes the stop whose absence shortens the path most. */
 export function dropCostliestStop<T extends LatLng>(start: LatLng, stops: T[]): T[] {
   let bestIndex = 0;
   let bestLength = Infinity;
@@ -101,11 +94,8 @@ export interface PlanInput {
   seed?: number;
 }
 
-/**
- * Pure planning step (no I/O): filter → select → order → fit to the target
- * distance. Real street distances are only known after routing, so this works
- * on straight lines × STREET_FACTOR and the caller re-checks the hard limit.
- */
+// No I/O here: filter, select, order, fit to the target distance. Works on
+// straight lines * STREET_FACTOR; the routed distance is checked in service.ts.
 export function planRoute(pois: Poi[], input: PlanInput): RoutePlan {
   const { start, durationMinutes, theme, seed = 0 } = input;
   const target = targetMeters(durationMinutes);
@@ -125,13 +115,13 @@ export function planRoute(pois: Poi[], input: PlanInput): RoutePlan {
 
   let stops = orderStops(start, selectStops(candidates, opts));
 
-  // Too long: shed stops, but keep enough for the walk to be worth taking.
+  // too long: drop stops, but not below the floor
   const floor = Math.min(count, durationMinutes >= 60 ? 4 : MIN_STOPS);
   while (stops.length > floor && estimateMeters(start, stops) > target * (1 + DISTANCE_TOLERANCE)) {
     stops = orderStops(start, dropCostliestStop(start, stops));
   }
 
-  // Too short: allow up to two extra stops if there are candidates left.
+  // too short: try up to two more stops
   for (let extra = 1; extra <= 2; extra++) {
     if (estimateMeters(start, stops) >= target * (1 - DISTANCE_TOLERANCE)) break;
     const grown = selectStops(candidates, { ...opts, count: stops.length + 1 }, stops);

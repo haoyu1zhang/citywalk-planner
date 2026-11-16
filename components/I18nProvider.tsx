@@ -18,7 +18,7 @@ export function I18nProvider({ initialLocale, children }: { initialLocale: Local
 
   const setLocale = useCallback(
     (next: Locale) => {
-      // The cookie lets the server render the next page in the right language.
+      // cookie so server components pick it up too
       document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
       document.documentElement.lang = next;
       setLocaleState(next);

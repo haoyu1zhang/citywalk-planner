@@ -31,8 +31,7 @@ export function parseOsrm(raw: unknown): RoutedPath {
 /** Public servers cap the number of waypoints per request. */
 const MAX_WAYPOINTS = 25;
 
-// The well-known router.project-osrm.org demo only serves the car profile, so
-// the default is the FOSSGIS instance, which has a real pedestrian profile.
+// router.project-osrm.org only has the car profile; the FOSSGIS server has foot
 const DEFAULT_BASE = "https://routing.openstreetmap.de/routed-foot";
 
 export function createOsrmProvider(
@@ -54,7 +53,7 @@ export function createOsrmProvider(
   return {
     name: "osrm",
     async walk(input) {
-      // Round (stable cache keys) and drop consecutive duplicates.
+      // round for stable cache keys, drop consecutive duplicates
       const points: LatLng[] = [];
       for (const p of input) {
         const q = { lat: roundCoord(p.lat), lng: roundCoord(p.lng) };
@@ -63,8 +62,7 @@ export function createOsrmProvider(
       }
       if (points.length < 2) throw new HttpError("need at least two distinct points", "parse");
 
-      // One request per route in practice; long routes are split into
-      // overlapping batches that are fetched sequentially, never in parallel.
+      // usually one request; long routes go in overlapping batches, one at a time
       const merged: RoutedPath = {
         geometry: { type: "LineString", coordinates: [] },
         distanceMeters: 0,

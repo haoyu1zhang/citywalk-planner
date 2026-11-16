@@ -1,7 +1,6 @@
 import { cookies, headers } from "next/headers";
 import { isLocale, LOCALE_COOKIE, negotiateLocale, translate, type Locale, type Translate } from "./index";
 
-/** The visitor's choice (cookie) wins; otherwise the browser's language. */
 export async function getLocale(): Promise<Locale> {
   const saved = (await cookies()).get(LOCALE_COOKIE)?.value;
   if (isLocale(saved)) return saved;

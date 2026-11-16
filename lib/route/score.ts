@@ -14,17 +14,13 @@ export const WEIGHTS = {
 
 export interface ScoreContext {
   theme: Theme;
-  /** Where the walker currently is: the start, or the last picked stop. */
   from: LatLng;
-  /** Category of the last picked stop, if any. */
   lastCategory: Category | null;
   pickedCategories: ReadonlySet<Category>;
-  /** Leg length that would make the whole walk hit its target distance. */
   idealLegMeters: number;
   seed: number;
 }
 
-/** Deterministic 0..1 noise per (poi, seed), so "regenerate" is reproducible. */
 export function jitter(id: string, seed: number): number {
   if (seed === 0) return 0;
   let h = 2166136261 ^ seed;
@@ -40,8 +36,7 @@ export function jitter(id: string, seed: number): number {
  * score = theme match + tag richness + diversity bonus
  *         − detour penalty − consecutive-same-category penalty
  *
- * The detour penalty is measured against the ideal leg length, not against
- * zero: a stop 50 m away is as unhelpful for a 60-minute walk as one 3 km away.
+ * detour is measured against the ideal leg length, not zero
  */
 export function scorePoi(poi: Poi, ctx: ScoreContext): number {
   const cfg = THEME_CONFIG[ctx.theme];

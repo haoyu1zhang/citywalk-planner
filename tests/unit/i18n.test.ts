@@ -17,7 +17,7 @@ describe("i18n", () => {
     }
   });
 
-  // Keys built at runtime are not checked by the compiler, so check them here.
+  // keys built at runtime aren't type-checked
   it("has a message for every dynamic key", () => {
     const keys = [
       ...WARNING_CODES.map((c) => `warning.${c}`),

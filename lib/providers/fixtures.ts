@@ -11,8 +11,7 @@ import milan from "@/lib/fixtures/milan.json";
 import rome from "@/lib/fixtures/rome.json";
 import venice from "@/lib/fixtures/venice.json";
 
-// Snapshots of real Overpass results (see scripts/build-fixtures.ts). They are
-// validated like any other external data.
+// snapshots of real Overpass results, see scripts/build-fixtures.ts
 const RAW: Record<string, unknown> = { rome, florence, milan, venice, bologna };
 const parsed = new Map<string, Poi[]>();
 
