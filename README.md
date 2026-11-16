@@ -1,36 +1,148 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CityWalk Planner · 城市漫步路线生成器
 
-## Getting Started
+选一个城市、步行时长、主题和起点,生成一条**能走完、不绕路**的漫步路线:咖啡馆、公园、书店、景点串成一条线,画在地图上,可以删站、换一条、分享链接、导出 GeoJSON。
 
-First, run the development server:
+所有地点和路径都来自 OpenStreetMap 的真实数据(Overpass + OSRM),没有任何坐标是模型生成的。
+
+> 在线 demo:`https://<your-project>.vercel.app`(部署后替换)
+
+| 首页(375px) | 路线结果 | 桌面端 |
+| --- | --- | --- |
+| ![首页](docs/home-mobile.png) | ![路线](docs/route-mobile.png) | ![桌面](docs/route-desktop.png) |
+
+> 截图是占位:部署后按 [docs/README.md](docs/README.md) 的说明截图或录 GIF 放进 `docs/`。
+
+## 功能
+
+- 5 个预设城市(罗马、佛罗伦萨、米兰、威尼斯、博洛尼亚),起点可以搜地标或直接点地图
+- 时长 30 / 60 / 90 / 120 分钟,主题:经典、咖啡、文艺、公园、拍照、雨天
+- 地图上显示编号站点和真实步行路径,列表里有类别、建议停留时间和 OSM 链接
+- 总距离、步行时间(按 4.5 km/h)、总停留时间
+- 删除站点、换一条(同一个链接永远得到同一条路线)
+- 分享:链接里带着完整参数和站点 ID,打开即复现;导出 GeoJSON
+- 外部服务出问题时不白屏:Overpass 不可用 → 内置数据快照;路由不可用 → 直线连接;都会明确提示
+
+## 技术栈
+
+Next.js 15(App Router)· TypeScript strict · Tailwind CSS v4 + shadcn/ui 风格组件 · react-leaflet · Zod · Vitest · Playwright
+
+不需要任何 API key。
+
+## 本地运行
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev            # http://localhost:3000
+
+npm run lint
+npm run typecheck
+npm test               # 单元测试
+npm run test:e2e       # 1 条关键路径 E2E(离线模式,不访问公共 API)
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+第一次跑 E2E 需要 `npx playwright install chromium`;也可以用 `PW_CHROME_PATH=/path/to/chrome` 复用本机的 Chrome。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+没有网络时用 `CITYWALK_OFFLINE=1 npm run dev`,只使用内置数据。环境变量见 [.env.example](.env.example),全部可选。
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 架构
 
-## Learn More
+```
+app/
+  page.tsx              首页:表单 + 选起点的地图
+  route/page.tsx        结果页:地图 + 站点列表 + 分享/导出
+  api/route/route.ts    POST /api/route
+  api/geocode/route.ts  GET  /api/geocode?q=
+components/             PlannerForm, RouteView, MapView(仅客户端加载), ui/
+lib/
+  schemas.ts            所有 Zod schema(请求、响应、POI)
+  themes.ts             主题 → 类别 → OSM 标签,以及全部可调常数
+  http.ts               fetch 封装:超时、有限重试、内存缓存、User-Agent
+  providers/            overpass / osrm / nominatim / fixtures,统一接口,可替换
+  route/
+    candidates.ts       过滤:类别、无名、过远、重复
+    score.ts            候选评分
+    order.ts            最近邻 + 2-opt
+    plan.ts             选点 → 排序 → 贴合目标距离(纯函数,无 I/O)
+    service.ts          编排:取数据 → 规划 → 真实路由 → 降级
+  share.ts, geojson.ts  URL 编解码、GeoJSON 导出
+  fixtures/             预设城市的真实 Overpass 数据快照
+types/                  由 Zod schema 推导出的类型
+tests/unit, tests/e2e
+```
 
-To learn more about Next.js, take a look at the following resources:
+请求流程:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+POST /api/route ─ Zod 校验
+  ├─ 有 stopIds(分享链接)→ 按 ID 取回这些站点,保持顺序
+  └─ 否则 Overpass 查询 →(失败则用 fixture)→ planRoute()
+        filter → 贪心选点(评分)→ 最近邻 → 2-opt → 按目标距离增删站点
+  → OSRM 步行路由(1 次请求;超过 1.5× 上限则删站重试,最多 3 次)
+  → 失败则直线 + 提示
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### API
 
-## Deploy on Vercel
+`POST /api/route`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```jsonc
+// 请求
+{ "city": "rome", "start": { "lat": 41.8986, "lng": 12.4769 }, "durationMinutes": 60, "theme": "coffee",
+  "stopIds": ["node/261859088"],   // 可选:固定站点,用于分享链接和删除站点
+  "seed": 1 }                      // 可选:“换一条”
+// 响应
+{ "routeId": "…", "summary": { "distanceMeters": 4228, "durationMinutes": 56, "stopCount": 6 },
+  "stops": [{ "id": "node/261859088", "name": "Sant'Eustachio", "category": "cafe", "lat": 41.89825, "lng": 12.47543,
+              "suggestedStayMinutes": 20, "osmUrl": "https://www.openstreetmap.org/node/261859088" }],
+  "geometry": { "type": "LineString", "coordinates": [[12.4769, 41.8986]] },
+  "warnings": [] }
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+错误统一为 `{ "error": { "code", "message" } }`:`BAD_REQUEST` 400、`NO_RESULTS` 422、`POI_UNAVAILABLE` 502。
+
+`GET /api/geocode?q=` 代理 Nominatim,带 User-Agent 和 24 小时缓存。只在用户提交时查询(Nominatim 禁止自动补全)。
+
+### 算法
+
+- 目标距离 = 时长 × 4.5 km/h,允许 ±20%;搜索半径 = 目标距离 × 0.45。
+- 评分:`主题匹配 + 标签丰富度 + 多样性奖励 − 绕路惩罚 − 连续同类惩罚`。
+- 每类上限:主题只有一个主类别时最多 3 个,否则每个主类别 2 个,配角类别各 1 个。
+- 排序:最近邻构造,2-opt 优化(起点固定的开放路径)。
+- 硬上限:真实步行距离不超过目标的 1.5 倍,超过就删掉最绕的一站再算。
+
+## 技术难点
+
+**1. 把“60 分钟”变成一条长度合适的路线。** 朴素的“离得越近越好”会把所有站点挤在起点周围,60 分钟的路线 15 分钟就走完了。这里的绕路惩罚是相对“理想步长”(目标距离 ÷ 站数)计算的:太近和太远一样扣分。选完点后先用直线距离 × 1.3 估算,太长删站、太短加站;拿到真实步行距离后再用 1.5 倍上限复核。实测罗马 60 分钟咖啡路线:估算 4.1 km,OSRM 实际 4.2 km,目标 4.5 km。
+
+**2. 排序时兼顾距离和节奏。** 纯按距离做 2-opt 会排出“咖啡、咖啡、咖啡、公园”。这里没有在排完之后打补丁,而是把“相邻两站同类”直接记成多走 150 米,放进最近邻和 2-opt 共用的代价函数里。因为代价对称,2-opt 的增量计算依然成立,算法自己会在少走路和有变化之间权衡。
+
+**3. 在不稳定的公共 API 上做一个不会挂的 demo。** Overpass 公共实例经常超时或限流(写这个项目时主实例就宕了一阵)。对策是分层的:provider 接口隔离外部服务;每次调用有超时、重试上限、缓存和 User-Agent;Overpass 多镜像各试一次;全失败则退回内置的真实数据快照;路由失败退回直线。每一层降级都会通过 `warnings` 告诉用户,而不是假装一切正常。
+
+**4. 分享链接要能复现。** 只存“城市 + 时长 + 主题”不够:OSM 数据会变,评分也会调。所以生成后把站点的 OSM ID 写进 URL,再次打开时按 ID 取回这些站点。“换一条”用带种子的确定性扰动,同一个链接永远是同一条路线。
+
+## 已知限制
+
+- 默认路由服务是 FOSSGIS 的 `routing.openstreetmap.de`(有步行 profile)。常见的 `router.project-osrm.org` demo 只提供驾车 profile,不适合步行。两者都是公共服务,没有 SLA;正式使用应自建 OSRM 或换 Valhalla。
+- 内存缓存在 Vercel 的 serverless 环境里只在实例存活期间有效。
+- 内置数据只覆盖 5 个预设城市中心约 1.8 km 的范围,每城约 45 个地点。120 分钟路线在离线模式下会偏短。用 `npm run fixtures` 可以重新生成。
+- OSM 的“景点”标签质量不一,偶尔会选到不太值得停留的地方。
+
+## 部署到 Vercel
+
+1. 推到 GitHub,在 Vercel 里 Import 这个仓库,框架自动识别为 Next.js,不用改构建设置。
+2. 建议设置环境变量 `APP_USER_AGENT`,写上你的项目地址或联系方式(OSM 各服务的使用政策要求)。
+3. `/api/route` 声明了 `maxDuration = 30`,Hobby 套餐可用。
+4. 部署后用“罗马 / 60 分钟 / 咖啡”走一遍,再把链接填到本文件顶部。
+
+## 后续计划
+
+- 拖拽调整站点顺序
+- 环形路线(回到起点)
+- 用 Supabase 保存路线,生成短链接
+- 营业时间过滤(OSM `opening_hours`)
+- 持久化缓存(Vercel KV),减轻对公共 API 的压力
+
+## 数据与致谢
+
+地图与地点数据 © [OpenStreetMap 贡献者](https://www.openstreetmap.org/copyright),以 ODbL 授权。地点查询使用 Overpass API,路径使用 OSRM,地标搜索使用 Nominatim。请遵守它们各自的使用政策。
