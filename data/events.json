@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-17",
+  "updatedAt": "2026-11-18",
   "events": [
     {"id":"ez3eb6829aa5","name":"Aurea di Elvi Ratti","url":"https://e-zine.it/?s=Aurea%20di%20Elvi%20Ratti","startsAt":"2026-10-20T17:00","endsAt":"2027-01-10","category":"arts","venue":"via Boncompagni, 18","lat":41.90867,"lng":12.49515,"source":"ezine"},
     {"id":"ez0f43af6032","name":"Marco Manzo. Esistere è cambiare","url":"https://e-zine.it/?s=Marco%20Manzo.%20Esistere%20%C3%A8%20cambiare","startsAt":"2026-10-22T18:00","endsAt":"2026-12-01","category":"arts","venue":"Viale Europa 287","lat":41.83044,"lng":12.47156,"source":"ezine"},
@@ -9,7 +9,6 @@
     {"id":"ez163d3475c9","name":"Alan Rogers. Archeologia del Futuro","url":"https://e-zine.it/?s=Alan%20Rogers.%20Archeologia%20del%20Futuro","startsAt":"2026-10-29T18:00","endsAt":"2026-11-29","category":"arts","venue":"Dorsoduro 3061","lat":45.43313,"lng":12.31903,"source":"ezine"},
     {"id":"ez01e37ad785","name":"Massimo Orsi - Trait d’Union","url":"https://e-zine.it/?s=Massimo%20Orsi%20-%20Trait%20d%E2%80%99Union","startsAt":"2026-10-30T18:30","endsAt":"2026-11-30","category":"arts","venue":"Via Marin Sanudo 24","lat":41.88532,"lng":12.53608,"source":"ezine"},
     {"id":"ez5922dcc8c1","name":"Della misura","url":"https://e-zine.it/?s=Della%20misura","startsAt":"2026-11-03T18:00","endsAt":"2026-11-24","category":"arts","venue":"Via Principe Eugenio 60 · Roma","lat":41.89386,"lng":12.50814,"source":"ezine"},
-    {"id":"ez1ccedf6e2b","name":"ADHUC MULIERES di Tommaso Pensa a Galleria Vittoria","url":"https://e-zine.it/?s=ADHUC%20MULIERES%20di%20Tommaso%20Pensa%20a%20Galleria%20Vittoria","startsAt":"2026-11-04T18:00","endsAt":"2026-11-17","category":"arts","venue":"Via Margutta 103","lat":41.90862,"lng":12.47953,"source":"ezine"},
     {"id":"ez349535e2d5","name":"Beyond all known boundaries","url":"https://e-zine.it/?s=Beyond%20all%20known%20boundaries","startsAt":"2026-11-05T18:00","endsAt":"2026-11-20","category":"arts","venue":"Piazza di Firenze, 27","lat":41.90216,"lng":12.47596,"source":"ezine"},
     {"id":"ezb927430848","name":"Sfumature di due mondi","url":"https://e-zine.it/?s=Sfumature%20di%20due%20mondi","startsAt":"2026-11-05T18:30","endsAt":"2026-11-21","category":"arts","venue":"Via Pietro Calvi 2","lat":45.46701,"lng":9.21005,"source":"ezine"},
     {"id":"ez8196ea2449","name":"Risonanze Collettive L’arte come spazio di empatia, dialogo e co","url":"https://e-zine.it/?s=Risonanze%20Collettive%20L%E2%80%99arte%20come%20spazio%20di%20empatia%2C%20dialogo%20e%20co","startsAt":"2026-11-07T11:30","endsAt":"2026-11-30","category":"arts","venue":"via raffaele cadorna 28","lat":41.90845,"lng":12.49806,"source":"ezine"},
@@ -31,6 +30,7 @@
     {"id":"ez0ae127ade2","name":"Claudio Burei Cartoni Animati","url":"https://e-zine.it/?s=Claudio%20Burei%20Cartoni%20Animati","startsAt":"2026-11-24T17:00","endsAt":"2026-12-13","category":"arts","venue":"Via Giulia 73","lat":41.89894,"lng":12.46559,"source":"ezine"},
     {"id":"ez50387b3cdd","name":"Col vivo splendore di Collodi. L’italiano che ride nel mondo","url":"https://e-zine.it/?s=Col%20vivo%20splendore%20di%20Collodi.%20L%E2%80%99italiano%20che%20ride%20nel%20mondo","startsAt":"2026-11-26","category":"arts","venue":"Piazza di Firenze, 27","lat":41.90216,"lng":12.47596,"source":"ezine"},
     {"id":"ez28b416f682","name":"Per Aspera ad Astra di Giuseppe Alletto","url":"https://e-zine.it/?s=Per%20Aspera%20ad%20Astra%20di%20Giuseppe%20Alletto","startsAt":"2026-11-26T18:30","endsAt":"2026-12-30","category":"arts","venue":"Via delle Fosse di Castello","lat":41.90401,"lng":12.46359,"source":"ezine"},
-    {"id":"ezc1fc3a8717","name":"DVO e Sitland ospitano l’evento Abitare la natura - Bookcity","url":"https://e-zine.it/?s=DVO%20e%20Sitland%20ospitano%20l%E2%80%99evento%20Abitare%20la%20natura%20-%20Bookcity","startsAt":"2026-11-27T18:00","category":"arts","venue":"Via Maroncelli 5","lat":45.534,"lng":9.1452,"source":"ezine"}
+    {"id":"ezc1fc3a8717","name":"DVO e Sitland ospitano l’evento Abitare la natura - Bookcity","url":"https://e-zine.it/?s=DVO%20e%20Sitland%20ospitano%20l%E2%80%99evento%20Abitare%20la%20natura%20-%20Bookcity","startsAt":"2026-11-27T18:00","category":"arts","venue":"Via Maroncelli 5","lat":45.534,"lng":9.1452,"source":"ezine"},
+    {"id":"eza557953deb","name":"Liana Ghukasyan - Chambres Séparées","url":"https://e-zine.it/?s=Liana%20Ghukasyan%20-%20Chambres%20S%C3%A9par%C3%A9es","startsAt":"2026-11-28T17:30","endsAt":"2027-01-16","category":"arts","venue":"Via Sermide 7","lat":41.88144,"lng":12.51668,"source":"ezine"}
   ]
 }
