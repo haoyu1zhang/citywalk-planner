@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-19",
+  "updatedAt": "2026-11-20",
   "events": [
     {"id":"ez3eb6829aa5","name":"Aurea di Elvi Ratti","url":"https://e-zine.it/?s=Aurea%20di%20Elvi%20Ratti","startsAt":"2026-10-20T17:00","endsAt":"2027-01-10","category":"arts","venue":"via Boncompagni, 18","lat":41.90867,"lng":12.49515,"source":"ezine"},
     {"id":"ez0f43af6032","name":"Marco Manzo. Esistere è cambiare","url":"https://e-zine.it/?s=Marco%20Manzo.%20Esistere%20%C3%A8%20cambiare","startsAt":"2026-10-22T18:00","endsAt":"2026-12-01","category":"arts","venue":"Viale Europa 287","lat":41.83044,"lng":12.47156,"source":"ezine"},
@@ -21,7 +21,6 @@
     {"id":"ez33f532cab5","name":"Daniele Contavalli - Stati Crepuscolari della Coscienza 2","url":"https://e-zine.it/?s=Daniele%20Contavalli%20-%20Stati%20Crepuscolari%20della%20Coscienza%202","startsAt":"2026-11-14T17:00","endsAt":"2026-11-28","category":"arts","venue":"Piazza Adriana 5","lat":41.90477,"lng":12.46545,"source":"ezine"},
     {"id":"ez5b0152914e","name":"Inventiamo Creature per Spiegarci","url":"https://e-zine.it/?s=Inventiamo%20Creature%20per%20Spiegarci","startsAt":"2026-11-14T17:00","endsAt":"2026-11-28","category":"arts","venue":"Via Giulio Tarra, 64","lat":41.86482,"lng":12.4477,"source":"ezine"},
     {"id":"eza0fe1807ed","name":"Vincenzo Scolamiero - Alla vista di certe piccole cose","url":"https://e-zine.it/?s=Vincenzo%20Scolamiero%20-%20Alla%20vista%20di%20certe%20piccole%20cose","startsAt":"2026-11-14T17:00","endsAt":"2027-01-07","category":"arts","venue":"Via Benzoni 13","lat":41.86921,"lng":12.48439,"source":"ezine"},
-    {"id":"eza497437df6","name":"L’arte Simbolista di Brendea Cosmin sbarca a Venezia","url":"https://e-zine.it/?s=L%E2%80%99arte%20Simbolista%20di%20Brendea%20Cosmin%20sbarca%20a%20Venezia","startsAt":"2026-11-19T16:00","category":"arts","venue":"Cannaregio 6301/A","lat":45.44383,"lng":12.32704,"source":"ezine"},
     {"id":"ez0a37957f85","name":"Terra Incognita","url":"https://e-zine.it/?s=Terra%20Incognita","startsAt":"2026-11-19T18:00","endsAt":"2026-12-19","category":"arts","venue":"Borgo Pio 125","lat":41.90375,"lng":12.46088,"source":"ezine"},
     {"id":"eza509a71011","name":"Frammenti di collezione","url":"https://e-zine.it/?s=Frammenti%20di%20collezione","startsAt":"2026-11-19T18:00","endsAt":"2026-12-23","category":"arts","venue":"Via Brera 2","lat":45.46932,"lng":9.18822,"source":"ezine"},
     {"id":"eza76be88ccd","name":"TERRA DI SOLITUDINE, TEMPO DI SILENZIO - Giulia Nelli","url":"https://e-zine.it/?s=TERRA%20DI%20SOLITUDINE%2C%20TEMPO%20DI%20SILENZIO%20-%20Giulia%20Nelli","startsAt":"2026-11-19T18:30","endsAt":"2026-12-19","category":"arts","venue":"Via Benedetto Marcello 46 - Milano","lat":45.48296,"lng":9.2106,"source":"ezine"},
