@@ -28,8 +28,9 @@ const TAGS: Record<Category, string[]> = {
   restaurant: ["amenity:restaurant"],
   bar: ["amenity:bar"],
 };
-// same filter as the Overpass query
-const HISTORIC = /^(monument|memorial|castle|ruins|archaeological_site|church|fountain)$/;
+// Like the Overpass filter, minus "memorial": without the tag list there is no
+// way to tell a monument from one of the thousands of wall plaques.
+const HISTORIC = /^(monument|castle|ruins|archaeological_site|church|fountain)$/;
 const OSM_TYPE = { N: "node", W: "way", R: "relation" } as const;
 
 const featureSchema = z.object({
@@ -127,7 +128,7 @@ export function createPhotonProvider(): PoiProvider {
       ];
       const results = await inBatches(
         urls.map((url) => () => get(url)),
-        4,
+        2,
       );
       if (results.every((r) => r.status === "rejected")) {
         throw new HttpError("Photon did not respond", "network");

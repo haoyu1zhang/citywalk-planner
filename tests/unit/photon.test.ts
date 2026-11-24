@@ -31,18 +31,19 @@ const sample = {
     { type: "Feature", properties: { osm_type: "N", osm_id: 1, osm_key: "amenity", osm_value: "cafe" }, geometry: { type: "Point", coordinates: [2.35, 48.85] } },
     { type: "Feature", properties: { osm_type: "W", osm_id: 2, osm_key: "historic", osm_value: "building", name: "Old house" }, geometry: { type: "Point", coordinates: [2.35, 48.85] } },
     { type: "Feature", properties: { osm_type: "R", osm_id: 3, osm_key: "historic", osm_value: "memorial", name: "Memorial" }, geometry: { type: "Point", coordinates: [2.351, 48.851] } },
+    { type: "Feature", properties: { osm_type: "R", osm_id: 5, osm_key: "historic", osm_value: "castle", name: "Castle" }, geometry: { type: "Point", coordinates: [2.352, 48.852] } },
     { type: "Feature", properties: { osm_type: "N", osm_id: 4, osm_key: "shop", osm_value: "bakery", name: "Boulangerie" }, geometry: { type: "Point", coordinates: [2.35, 48.85] } },
     { broken: true },
   ],
 };
 
 describe("Photon", () => {
-  it("maps features to places and drops unnamed or off-category ones", () => {
+  it("maps features to places and drops unnamed, off-category and plaque-like ones", () => {
     const pois = parsePhoton(sample);
     expect(pois.map((p) => [p.id, p.name, p.category])).toEqual([
       ["node/8932455801", "Marlette", "cafe"],
       ["way/24267141", "Square de la Tour Saint-Jacques", "park"],
-      ["relation/3", "Memorial", "historic"],
+      ["relation/5", "Castle", "historic"],
     ]);
     expect(pois[0]).toMatchObject({ lat: 48.8574019, lng: 2.3526636 });
     expect(() => parsePhoton({ message: "error" })).toThrow();
