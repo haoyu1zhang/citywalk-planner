@@ -104,3 +104,27 @@ test("wheel: spin, add the pick to the route, then open it in Google Maps", asyn
   expect(url.searchParams.get("travelmode")).toBe("walking");
   expect(url.searchParams.get("waypoints")!.split("|")).toHaveLength(before.length);
 });
+
+test("any city: search one, or start from where you are", async ({ page, context }) => {
+  await page.route("**/api/geocode?*", (r) =>
+    r.fulfill({ json: { results: [{ name: "巴黎", label: "巴黎, 法兰西岛, 法国", lat: 48.8566, lng: 2.3522 }] } }),
+  );
+  await page.goto("/");
+  await page.getByTestId("other-city").click();
+  await page.getByTestId("city-search").fill("Paris");
+  await page.getByTestId("city-search").press("Enter");
+  await page.getByRole("button", { name: /巴黎, 法兰西岛/ }).click();
+  await expect(page.locator('[data-city="custom"]')).toHaveText("巴黎");
+  await expect(page.getByTestId("start-label")).toHaveText("巴黎市中心");
+  await page.getByTestId("generate").click();
+  await expect(page).toHaveURL(/city=%E5%B7%B4%E9%BB%8E&lat=48.8566&lng=2.3522/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("巴黎");
+
+  // a location inside a preset city picks that preset
+  await context.grantPermissions(["geolocation"]);
+  await context.setGeolocation({ latitude: 43.7731, longitude: 11.2558 });
+  await page.goto("/");
+  await page.getByTestId("use-location").click();
+  await expect(page.locator('[data-city="florence"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("start-label")).toHaveText("你的当前位置");
+});

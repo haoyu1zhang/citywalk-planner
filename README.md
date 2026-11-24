@@ -1,6 +1,6 @@
 # CityWalk Planner
 
-城市漫步路线生成器。选城市、步行时长、主题和起点,生成一条能走完、不绕路的路线,画在地图上。地点来自 OpenStreetMap(Overpass),步行路径来自 OSRM。
+城市漫步路线生成器。选城市、步行时长、主题和起点,生成一条能走完、不绕路的路线,画在地图上。地点来自 OpenStreetMap(通过 Photon / Overpass 查询),步行路径来自 OSRM。
 
 在线地址:<https://citywalk-planner-pi.vercel.app>
 
@@ -8,7 +8,9 @@
 
 ## 功能
 
-- 5 个预设城市(罗马、佛罗伦萨、米兰、威尼斯、博洛尼亚),起点可以搜地标,也可以直接点地图
+- 任意城市:搜索城市名,或者“用我的位置”直接从当前位置出发
+- 5 个预设城市(罗马、佛罗伦萨、米兰、威尼斯、博洛尼亚)带内置数据,外部服务挂了也能用
+- 起点可以搜地标,也可以直接点地图
 - 时长 30 / 60 / 90 / 120 分钟;主题:经典、咖啡、文艺、公园、拍照、雨天
 - 约会模式:按“甜品或咖啡 → 散步 → 看风景 → 晚餐或小酌”排一条两个人的路线
 - 转盘:随机抽一个附近的地方,抽中可以加进路线
@@ -40,7 +42,7 @@ Next.js 15 (App Router)、TypeScript、Tailwind v4、react-leaflet、Zod、Vites
 app/                  页面和 API(/api/route、/api/places、/api/events、/api/geocode)
 components/           表单、结果页、地图、转盘、活动面板
 lib/route/            选点、评分、排序、约会模式
-lib/providers/        Overpass / OSRM / Nominatim / 活动数据,各自一个接口
+lib/providers/        Photon / Overpass / OSRM / Nominatim / 活动数据,各自一个接口
 lib/i18n/             三种语言的文案
 lib/fixtures/         预设城市的 OSM 数据快照(Overpass 挂了的时候用)
 data/events.json      活动快照,每天由 GitHub Actions 更新
@@ -64,7 +66,7 @@ tests/
 
 **连着三家咖啡馆。** 纯按距离排序就会这样。没有在排完之后再调,而是把“相邻两站同类”算作多走 150 米,直接放进排序的代价函数里。
 
-**公共 API 不稳定。** Overpass 经常超时,开发期间主站挂过好几个小时。现在的做法是每个镜像试一次,都不行就用仓库里的数据快照;路由不通就画直线。降级的时候页面上会提示。
+**公共 API 不稳定。** Overpass 的公共服务器上线后基本一直超时,所以地点改成先查 [Photon](https://photon.komoot.io)(komoot 的 OSM 搜索),不行再试 Overpass,预设城市最后还有仓库里的数据快照;路由不通就画直线。降级的时候页面上会提示。Photon 一次最多返回最近的 50 个,咖啡馆这类密集的类别会全挤在起点旁边,所以在起点四周再各查一次。分享链接里的站点用 Nominatim 按 OSM ID 回查。
 
 **分享链接要能复现。** 只存“城市 + 时长 + 主题”不行,OSM 数据会变。所以把站点的 OSM ID 写进 URL。
 
@@ -83,7 +85,8 @@ tests/
 - 活动目前基本只有罗马和米兰有数据。
 - Ticketmaster 部分还没用真实 key 测过。
 - Google 地图链接最多带 9 个途经点,手机浏览器里只支持 3 个(装了 App 没这个限制)。
-- 数据快照只覆盖预设城市中心 1.8 km 左右。
+- 数据快照只覆盖预设城市中心 1.8 km 左右;其他城市完全依赖 Photon。
+- Photon 拿不到 OSM 的完整标签,评分里的“标签丰富度”在非预设城市不太准。
 
 ## TODO
 

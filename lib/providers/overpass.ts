@@ -36,7 +36,7 @@ export function parseOverpass(raw: unknown): Poi[] {
 export function buildSearchQuery({ center, radiusMeters, categories }: PoiQuery): string {
   const around = `(around:${Math.round(radiusMeters)},${center.lat},${center.lng})`;
   const parts = categories.map((c) => `nwr${CATEGORY_FILTERS[c]}["name"]${around};`);
-  return `[out:json][timeout:8];(${parts.join("")});out center tags 400;`;
+  return `[out:json][timeout:5];(${parts.join("")});out center tags 400;`;
 }
 
 export function buildIdQuery(ids: string[]): string {
@@ -46,7 +46,7 @@ export function buildIdQuery(ids: string[]): string {
     .map((t) => [t, byType(t)] as const)
     .filter(([, list]) => list.length > 0)
     .map(([t, list]) => `${t}(id:${list.join(",")});`);
-  return `[out:json][timeout:8];(${parts.join("")});out center tags;`;
+  return `[out:json][timeout:5];(${parts.join("")});out center tags;`;
 }
 
 const DEFAULT_ENDPOINTS = [
@@ -67,7 +67,7 @@ export function createOverpassProvider(
           method: "POST",
           body: `data=${encodeURIComponent(query)}`,
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          timeoutMs: 8000,
+          timeoutMs: 5000,
           cacheKey: `overpass:${query}`,
           cacheTtlMs: 30 * 60_000,
         });

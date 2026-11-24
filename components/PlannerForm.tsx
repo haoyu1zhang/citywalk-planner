@@ -1,13 +1,13 @@
 "use client";
 
-import { Footprints, Heart, LoaderCircle, MapPin, Search, Sparkles } from "lucide-react";
+import { Footprints, Heart, LoaderCircle, LocateFixed, MapPin, Search, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
 import LazyMap from "@/components/LazyMap";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CITIES, type City } from "@/lib/cities";
+import { CITIES, presetCityNear } from "@/lib/cities";
 import { geocodeResponseSchema, type GeocodeResult } from "@/lib/schemas";
 import { encodeRouteParams } from "@/lib/share";
 import { DURATIONS, THEMES, targetMeters } from "@/lib/themes";
@@ -21,7 +21,25 @@ type SearchState =
   | { status: "error" };
 
 type Mode = "walk" | "date";
-type StartSource = { kind: "default" } | { kind: "search"; label: string } | { kind: "map" };
+type StartSource =
+  | { kind: "default" }
+  | { kind: "search"; label: string }
+  | { kind: "map" }
+  | { kind: "location" };
+
+/** A preset (id set, has built-in data) or any city found by search or location. */
+interface CityChoice {
+  id: string | null;
+  name: string;
+  query: string;
+  center: LatLng;
+}
+type LocateState =
+  | { status: "idle" }
+  | { status: "locating" }
+  | { status: "error"; key: "form.locationDenied" | "form.locationFailed" };
+
+const preset = (c: (typeof CITIES)[number]): CityChoice => ({ id: c.id, name: c.query, query: c.query, center: c.center });
 
 const WALK_THEMES = THEMES.filter((t) => t !== "date");
 
@@ -45,8 +63,12 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 export function PlannerForm() {
   const router = useRouter();
   const { t, locale } = useI18n();
+  const [cityQuery, setCityQuery] = useState("");
+  const [citySearch, setCitySearch] = useState<SearchState>({ status: "idle" });
+  const [cityOpen, setCityOpen] = useState(false);
+  const [locate, setLocate] = useState<LocateState>({ status: "idle" });
   const [mode, setMode] = useState<Mode>("walk");
-  const [city, setCity] = useState<City>(CITIES[0]);
+  const [city, setCity] = useState<CityChoice>(preset(CITIES[0]));
   const [duration, setDuration] = useState<Duration>(60);
   const [theme, setTheme] = useState<Exclude<Theme, "date">>("coffee");
   const [start, setStart] = useState<LatLng>(CITIES[0].center);
@@ -55,18 +77,72 @@ export function PlannerForm() {
   const [search, setSearch] = useState<SearchState>({ status: "idle" });
   const [submitting, setSubmitting] = useState(false);
 
+  const cityName = city.id ? t(`city.${city.id}` as "city.rome") : city.name;
   const startLabel =
     startSource.kind === "default"
-      ? t(`cityStart.${city.id}` as "cityStart.rome")
+      ? city.id
+        ? t(`cityStart.${city.id}` as "cityStart.rome")
+        : t("form.cityCentre", { city: city.name })
       : startSource.kind === "search"
         ? startSource.label
-        : t("form.pickedOnMap");
+        : startSource.kind === "location"
+          ? t("form.myLocation")
+          : t("form.pickedOnMap");
 
-  function chooseCity(next: City) {
+  function chooseCity(next: CityChoice, start: LatLng = next.center, source: StartSource = { kind: "default" }) {
     setCity(next);
-    setStart(next.center);
-    setStartSource({ kind: "default" });
+    setStart(start);
+    setStartSource(source);
     setSearch({ status: "idle" });
+    setCityOpen(false);
+    setCitySearch({ status: "idle" });
+    setCityQuery("");
+  }
+
+  async function runCitySearch() {
+    const q = cityQuery.trim();
+    if (q.length < 2) return;
+    setCitySearch({ status: "loading" });
+    try {
+      const res = await fetch(`/api/geocode?kind=city&lang=${locale}&q=${encodeURIComponent(q)}`);
+      const parsed = geocodeResponseSchema.safeParse(await res.json());
+      if (!res.ok || !parsed.success) throw new Error("geocode failed");
+      setCitySearch({ status: "done", results: parsed.data.results });
+    } catch {
+      setCitySearch({ status: "error" });
+    }
+  }
+
+  function locateMe() {
+    if (!navigator.geolocation) {
+      setLocate({ status: "error", key: "form.locationFailed" });
+      return;
+    }
+    setLocate({ status: "locating" });
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        const here = { lat: coords.latitude, lng: coords.longitude };
+        const near = presetCityNear(here);
+        let found: CityChoice = near ? preset(near) : { id: null, name: "", query: "", center: here };
+        if (!near) {
+          try {
+            const res = await fetch(`/api/geocode?lat=${here.lat}&lng=${here.lng}&lang=${locale}`);
+            const name = geocodeResponseSchema.parse(await res.json()).results[0]?.name;
+            if (name) found = { ...found, name, query: name };
+          } catch {
+            // fine without a name
+          }
+        }
+        chooseCity({ ...found, name: found.name || t("form.myLocation") }, here, { kind: "location" });
+        setLocate({ status: "idle" });
+      },
+      (err) =>
+        setLocate({
+          status: "error",
+          key: err.code === err.PERMISSION_DENIED ? "form.locationDenied" : "form.locationFailed",
+        }),
+      { timeout: 10_000, maximumAge: 10 * 60_000 },
+    );
   }
 
   // submit only: Nominatim forbids autocomplete
@@ -75,7 +151,8 @@ export function PlannerForm() {
     if (q.length < 2) return;
     setSearch({ status: "loading" });
     try {
-      const res = await fetch(`/api/geocode?q=${encodeURIComponent(`${q}, ${city.query}`)}`);
+      const where = city.query ? `${q}, ${city.query}` : q;
+      const res = await fetch(`/api/geocode?lang=${locale}&q=${encodeURIComponent(where)}`);
       const parsed = geocodeResponseSchema.safeParse(await res.json());
       if (!res.ok || !parsed.success) throw new Error("geocode failed");
       setSearch({ status: "done", results: parsed.data.results });
@@ -88,7 +165,7 @@ export function PlannerForm() {
     setSubmitting(true);
     router.push(
       `/route?${encodeRouteParams({
-        city: city.id,
+        city: city.id ?? city.name.slice(0, 80),
         start,
         durationMinutes: duration,
         theme: mode === "date" ? "date" : theme,
@@ -134,19 +211,106 @@ export function PlannerForm() {
 
         <Field label={t("form.city")}>
           <div className="flex flex-wrap gap-2">
+            {!city.id && (
+              <button type="button" aria-pressed className={chip(true)} data-city="custom">
+                {cityName}
+              </button>
+            )}
             {CITIES.map((c) => (
               <button
                 key={c.id}
                 type="button"
                 aria-pressed={c.id === city.id}
-                onClick={() => chooseCity(c)}
+                onClick={() => chooseCity(preset(c))}
                 className={chip(c.id === city.id)}
                 data-city={c.id}
               >
                 {t(`city.${c.id}` as "city.rome")}
               </button>
             ))}
+            <button
+              type="button"
+              aria-expanded={cityOpen}
+              onClick={() => setCityOpen((open) => !open)}
+              className={cn(chip(false), "border-dashed")}
+              data-testid="other-city"
+            >
+              {t("form.otherCity")}
+            </button>
           </div>
+
+          {cityOpen && (
+            <>
+              <form
+                className="flex gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void runCitySearch();
+                }}
+              >
+                <Input
+                  value={cityQuery}
+                  onChange={(e) => setCityQuery(e.target.value)}
+                  placeholder={t("form.citySearchPlaceholder")}
+                  aria-label={t("form.citySearchPlaceholder")}
+                  enterKeyHint="search"
+                  autoFocus
+                  data-testid="city-search"
+                />
+                <Button
+                  type="submit"
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0"
+                  aria-label={t("form.search")}
+                  disabled={citySearch.status === "loading"}
+                >
+                  {citySearch.status === "loading" ? <LoaderCircle className="animate-spin" /> : <Search />}
+                </Button>
+              </form>
+              {citySearch.status === "done" && citySearch.results.length === 0 && (
+                <p className="text-sm text-muted">{t("form.cityEmpty")}</p>
+              )}
+              {citySearch.status === "error" && <p className="text-sm text-warn-ink">{t("form.searchError")}</p>}
+              {citySearch.status === "done" && citySearch.results.length > 0 && (
+                <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
+                  {citySearch.results.map((r) => (
+                    <li key={`${r.lat},${r.lng}`}>
+                      <button
+                        type="button"
+                        className="block min-h-11 w-full px-3 py-2 text-left text-sm hover:bg-accent-soft"
+                        onClick={() => {
+                          const point = { lat: r.lat, lng: r.lng };
+                          const near = presetCityNear(point);
+                          chooseCity(near ? preset(near) : { id: null, name: r.name, query: r.name, center: point });
+                        }}
+                      >
+                        <span className="font-medium">{r.name}</span>
+                        {r.label && r.label !== r.name && <span className="block text-xs text-muted">{r.label}</span>}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+
+          <button
+            type="button"
+            onClick={locateMe}
+            disabled={locate.status === "locating"}
+            className="flex min-h-11 items-center gap-2 text-sm font-medium text-route hover:underline disabled:opacity-60"
+            data-testid="use-location"
+          >
+            {locate.status === "locating" ? (
+              <LoaderCircle className="size-4 animate-spin" aria-hidden />
+            ) : (
+              <LocateFixed className="size-4" aria-hidden />
+            )}
+            {t(locate.status === "locating" ? "form.locating" : "form.useLocation")}
+          </button>
+          {locate.status === "error" && <p className="text-sm text-warn-ink">{t(locate.key)}</p>}
+          {!city.id && <p className="text-xs text-muted">{t("form.liveOnly")}</p>}
         </Field>
 
         <Field label={t("form.duration")}>

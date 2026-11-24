@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { haversine } from "@/lib/geo";
 import { createFixtureProvider } from "@/lib/providers/fixtures";
-import { createOverpassProvider } from "@/lib/providers/overpass";
+import { createLivePoiProvider } from "@/lib/providers/live";
 import { filterCandidates } from "@/lib/route/candidates";
 import { searchRadius } from "@/lib/route/plan";
 import { decodeStopIds } from "@/lib/share";
@@ -23,7 +23,7 @@ const querySchema = z.object({
 
 const offline = process.env.CITYWALK_OFFLINE === "1";
 const fixtures = createFixtureProvider();
-const live = offline ? null : createOverpassProvider();
+const live = offline ? null : createLivePoiProvider();
 
 function sample<T>(items: T[], n: number): T[] {
   const pool = [...items];

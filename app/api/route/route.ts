@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { createFixtureProvider } from "@/lib/providers/fixtures";
 import { createOsrmProvider } from "@/lib/providers/osrm";
-import { createOverpassProvider } from "@/lib/providers/overpass";
+import { createLivePoiProvider } from "@/lib/providers/live";
 import { createEventProvider } from "@/lib/providers/events";
 import { generateRoute, RouteError } from "@/lib/route/service";
 import { routeRequestSchema, type ApiErrorCode } from "@/lib/schemas";
 
 export const runtime = "nodejs";
-// two Overpass mirrors at 8 s each plus routing
+// Photon, then two Overpass mirrors at 5 s each, plus routing
 export const maxDuration = 30;
 
 // CITYWALK_OFFLINE=1: fixtures only, no routing (e2e, demos without network)
@@ -16,7 +16,7 @@ const fixtures = createFixtureProvider();
 const deps = offline
   ? { pois: fixtures, routing: null, events: createEventProvider() }
   : {
-      pois: createOverpassProvider(),
+      pois: createLivePoiProvider(),
       fallbackPois: fixtures,
       routing: createOsrmProvider(),
       events: createEventProvider(),

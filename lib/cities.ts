@@ -1,3 +1,4 @@
+import { haversine } from "@/lib/geo";
 import type { LatLng } from "@/types";
 
 export interface City {
@@ -19,4 +20,9 @@ export function findCity(input: string): City | undefined {
   return CITIES.find(
     (c) => c.id === key || c.query.toLowerCase() === key,
   );
+}
+
+/** The preset city a point is in (within 6 km of its centre), if any. */
+export function presetCityNear(point: LatLng): City | undefined {
+  return CITIES.find((c) => haversine(point, c.center) <= 6000);
 }

@@ -103,6 +103,7 @@ export type ApiErrorCode = z.infer<typeof apiErrorSchema>["error"]["code"];
 
 export const geocodeResultSchema = z.object({
   name: z.string(),
+  label: z.string().optional(),
   lat: z.number(),
   lng: z.number(),
 });
