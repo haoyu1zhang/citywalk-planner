@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-25",
+  "updatedAt": "2026-11-26",
   "events": [
     {"id":"ez3eb6829aa5","name":"Aurea di Elvi Ratti","url":"https://e-zine.it/?s=Aurea%20di%20Elvi%20Ratti","startsAt":"2026-10-20T17:00","endsAt":"2027-01-10","category":"arts","venue":"via Boncompagni, 18","lat":41.90867,"lng":12.49515,"source":"ezine"},
     {"id":"ez0f43af6032","name":"Marco Manzo. Esistere è cambiare","url":"https://e-zine.it/?s=Marco%20Manzo.%20Esistere%20%C3%A8%20cambiare","startsAt":"2026-10-22T18:00","endsAt":"2026-12-01","category":"arts","venue":"Viale Europa 287","lat":41.83044,"lng":12.47156,"source":"ezine"},
@@ -33,6 +33,7 @@
     {"id":"ezcf85f60f7f","name":"Limiti Permeabili Dialogo tra Natura, Materia e Percezione","url":"https://e-zine.it/?s=Limiti%20Permeabili%20Dialogo%20tra%20Natura%2C%20Materia%20e%20Percezione","startsAt":"2026-12-01T17:00","endsAt":"2026-12-30","category":"arts","venue":"Via raffaele cadorna 18","lat":41.90845,"lng":12.49806,"source":"ezine"},
     {"id":"ez5881eaabb7","name":"Un’ opera, una coppia, un lavoro: TRITTICO #1","url":"https://e-zine.it/?s=Un%E2%80%99%20opera%2C%20una%20coppia%2C%20un%20lavoro%3A%20TRITTICO%20%231","startsAt":"2026-12-03T17:30","endsAt":"2027-01-16","category":"arts","venue":"Via dei Narcisi, 21","lat":41.88204,"lng":12.5658,"source":"ezine"},
     {"id":"ez1d4fbda738","name":"Gran mare","url":"https://e-zine.it/?s=Gran%20mare","startsAt":"2026-12-03T19:00","endsAt":"2027-01-30","category":"arts","venue":"Via Marin Sanudo 24","lat":41.88532,"lng":12.53608,"source":"ezine"},
+    {"id":"ez3327bc196c","name":"Workshop di Cianotipia","url":"https://e-zine.it/?s=Workshop%20di%20Cianotipia","startsAt":"2026-12-05T10:00","category":"arts","venue":"Via Paola Falconieri 39","lat":41.87547,"lng":12.45251,"source":"ezine"},
     {"id":"ezee52574d1f","name":"Apollo dionisiaco. Il senso della bellezza dell’arte","url":"https://e-zine.it/?s=Apollo%20dionisiaco.%20Il%20senso%20della%20bellezza%20dell%E2%80%99arte","startsAt":"2026-12-05T15:00","category":"arts","venue":"Viale Castro Pretorio, 105","lat":41.90597,"lng":12.50829,"source":"ezine"}
   ]
 }
