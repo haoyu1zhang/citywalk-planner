@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-27",
+  "updatedAt": "2026-11-28",
   "events": [
     {"id":"ez3eb6829aa5","name":"Aurea di Elvi Ratti","url":"https://e-zine.it/?s=Aurea%20di%20Elvi%20Ratti","startsAt":"2026-10-20T17:00","endsAt":"2027-01-10","category":"arts","venue":"via Boncompagni, 18","lat":41.90867,"lng":12.49515,"source":"ezine"},
     {"id":"ez0f43af6032","name":"Marco Manzo. Esistere è cambiare","url":"https://e-zine.it/?s=Marco%20Manzo.%20Esistere%20%C3%A8%20cambiare","startsAt":"2026-10-22T18:00","endsAt":"2026-12-01","category":"arts","venue":"Viale Europa 287","lat":41.83044,"lng":12.47156,"source":"ezine"},
@@ -23,7 +23,6 @@
     {"id":"ez0ae127ade2","name":"Claudio Burei Cartoni Animati","url":"https://e-zine.it/?s=Claudio%20Burei%20Cartoni%20Animati","startsAt":"2026-11-24T17:00","endsAt":"2026-12-13","category":"arts","venue":"Via Giulia 73","lat":41.89894,"lng":12.46559,"source":"ezine"},
     {"id":"ez2247227fcc","name":"Viva Paolo!","url":"https://e-zine.it/?s=Viva%20Paolo!","startsAt":"2026-11-24T18:00","endsAt":"2026-12-05","category":"arts","venue":"Via della Barchetta 13","lat":41.89606,"lng":12.46881,"source":"ezine"},
     {"id":"ez28b416f682","name":"Per Aspera ad Astra di Giuseppe Alletto","url":"https://e-zine.it/?s=Per%20Aspera%20ad%20Astra%20di%20Giuseppe%20Alletto","startsAt":"2026-11-26T18:30","endsAt":"2026-12-30","category":"arts","venue":"Via delle Fosse di Castello","lat":41.90401,"lng":12.46359,"source":"ezine"},
-    {"id":"ezc1fc3a8717","name":"DVO e Sitland ospitano l’evento Abitare la natura - Bookcity","url":"https://e-zine.it/?s=DVO%20e%20Sitland%20ospitano%20l%E2%80%99evento%20Abitare%20la%20natura%20-%20Bookcity","startsAt":"2026-11-27T18:00","category":"arts","venue":"Via Maroncelli 5","lat":45.534,"lng":9.1452,"source":"ezine"},
     {"id":"ez14407c686c","name":"ANCHE SENZ'ALI - mostra personale di Roberto Serrao","url":"https://e-zine.it/?s=ANCHE%20SENZ'ALI%20-%20mostra%20personale%20di%20Roberto%20Serrao","startsAt":"2026-11-28T17:00","endsAt":"2026-12-05","category":"arts","venue":"Via Gaetano Casati, 27","lat":41.86781,"lng":12.48572,"source":"ezine"},
     {"id":"eza557953deb","name":"Liana Ghukasyan - Chambres Séparées","url":"https://e-zine.it/?s=Liana%20Ghukasyan%20-%20Chambres%20S%C3%A9par%C3%A9es","startsAt":"2026-11-28T17:30","endsAt":"2027-01-16","category":"arts","venue":"Via Sermide 7","lat":41.88144,"lng":12.51668,"source":"ezine"},
     {"id":"ez348c0a246c","name":"Street Art for Planet Earth","url":"https://e-zine.it/?s=Street%20Art%20for%20Planet%20Earth","startsAt":"2026-11-28T18:00","endsAt":"2027-01-23","category":"arts","venue":"Via del Sudario 39","lat":41.89596,"lng":12.47557,"source":"ezine"},
